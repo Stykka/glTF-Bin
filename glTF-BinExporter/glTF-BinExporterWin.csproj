@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>glTF_BinExporter</RootNamespace>
+    <Version>1.0</Version>
+    <Title>glTF_BinExporter</Title>
+    <Description>Description of glTF_BinExporter</Description>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <LangVersion>latestmajor</LangVersion>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <LangVersion>latestmajor</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="RhinoCommon" Version="7.0.20295.18003-beta" />
+  </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="Copy &quot;$(TargetPath)&quot; &quot;$(TargetDir)$(ProjectName).rhp&quot;&#xD;&#xA;Erase &quot;$(TargetPath)&quot;&#xD;&#xA;powershell.exe -nologo -noprofile -command &quot;&amp; { if (Test-Path $(TargetDir)\glTF-BinExporter.rhi) { Remove-Item $(TargetDir)\glTF-BinExporter.rhi }; }&quot;&#xD;&#xA;powershell.exe -nologo -noprofile -command &quot;&amp; { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('.', '$(TargetDir)\..\glTF-BinExporter.rhi'); }&quot;&#xD;&#xA;" />
+  </Target>
+  
+</Project>
