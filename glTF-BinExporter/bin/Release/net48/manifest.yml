@@ -1,0 +1,13 @@
+---
+name: glTF-BinExporter
+version: 1.3.1.0
+authors:
+- Aske Doerge 
+description: Exports models/textures/materials to glTF Binary/glb.
+url: https://github.com/Doerge/glTF-Bin
+keywords:
+- glTF
+- glb
+- web
+- export
+
