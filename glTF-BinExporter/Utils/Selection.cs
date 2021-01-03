@@ -3,7 +3,7 @@ using Rhino.Geometry;
 using Rhino.Input;
 using Rhino.Input.Custom;
 
-namespace Stykka.Common.Utils
+namespace glTF_BinExporter.glTF
 {
     public class Selection
     {
@@ -57,38 +57,19 @@ namespace Stykka.Common.Utils
                     if (null != rhinoObject)
                         rhinoObject.Select(false);
                 }
-                //doc.Views.Redraw();
             }
 
-            //int objectCount = go.ObjectCount;
-
-            //RhinoApp.WriteLine(string.Format("Select object count = {0}", objectCount));
             return go;
         }
 
-        public static GetObject GetRhinoBlocksAndBreps()
+        public static GetObject GetValidExportObjects(string prompt)
         {
-            return GetRhinoObjects("Select surfaces, polysurfaces, or meshes", ObjectType.Brep | ObjectType.InstanceReference);
-        }
+            var objFilter = ObjectType.None;
+            foreach(var objtype in Constants.ValidObjectTypes) {
+                objFilter |= objtype;
+            }
 
-        public static Point3d GetPoint(string prompt)
-        {
-            GetPoint gp = new GetPoint();
-            gp.SetCommandPrompt(prompt);
-            gp.SetDefaultPoint(new Rhino.Geometry.Point3d(0, 0, 0));
-            GetResult res = gp.Get();
-
-            return gp.Point();
-        }
-
-        public static double GetNumber(string prompt, double defaultNumber)
-        {
-            GetNumber gn = new GetNumber();
-            gn.SetCommandPrompt(prompt);
-            gn.SetDefaultNumber(defaultNumber);
-            GetResult res = gn.Get();
-
-            return gn.Number();
+            return GetRhinoObjects(prompt, objFilter);
         }
     }
 }

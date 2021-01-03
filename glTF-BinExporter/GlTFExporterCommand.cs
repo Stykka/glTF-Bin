@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace Stykka.Common
+namespace glTF_BinExporter.glTF
 {
     public class ExportOptions
     {
@@ -33,10 +33,11 @@ namespace Stykka.Common
 
         protected override Result RunCommand(Rhino.RhinoDoc doc, RunMode mode)
         {
-            GetObject go = Utils.Selection.GetRhinoBlocksAndBreps();
+            GetObject go = Selection.GetValidExportObjects("Select objects to export.");
 
             var opts = new ExportOptions() { UseDracoCompression = true, DracoCompressionLevel = 10, DracoQuantizationBits = 16, UseBinary = true };
 
+            // NOTE: The following options can be useful in dev/debug:
             //bool useDracoCompression = true;
             //Rhino.Input.RhinoGet.GetBool("Compression", true, "None", "Draco", ref useDracoCompression);
             //bool useBinary = true;
@@ -59,6 +60,7 @@ namespace Stykka.Common
 
             try
             {
+                // Writes the result to a memory stream, then dumps it to a file.
                 using (FileStream fileStream = new FileStream(dialog.FileName, FileMode.Create, FileAccess.ReadWrite))
                 using (MemoryStream memoryStream = new MemoryStream(1024))
                 {
@@ -73,7 +75,7 @@ namespace Stykka.Common
                     }
                     else
                     {
-                        GlTFUtils.ExportJSON(memoryStream, rhinoObjects, opts);
+                        GlTFUtils.ExportText(memoryStream, rhinoObjects, opts);
                     }
 
                     memoryStream.Flush();
@@ -92,4 +94,3 @@ namespace Stykka.Common
         }
     }
 }
-

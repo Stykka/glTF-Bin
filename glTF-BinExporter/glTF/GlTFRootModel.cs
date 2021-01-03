@@ -5,144 +5,19 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
+using Rhino.Display;
 using Rhino.DocObjects;
 using Rhino.FileIO;
 using Rhino.Geometry;
 using Rhino.Render;
 
-namespace Stykka.Common.glTF
+namespace glTF_BinExporter.glTF
 {
-    public static class GlConstants
-    {
-        // componentType
-        // Byte size = 1
-        public static int BYTE = 5120;
-        public static int UNSIGNED_BYTE = 5121;
-        // Byte size = 2
-        public static int SHORT = 5122;
-        public static int UNSIGNED_SHORT = 5123;
-        // Byte size = 4
-        public static int UNSIGNED_INT = 5125;
-        public static int FLOAT = 5126;
-
-        // type
-        // #components=1
-        public static string SCALAR = "SCALAR";
-        // #components=2
-        public static string VEC2 = "VEC2";
-        // #components=3
-        public static string VEC3 = "VEC3";
-        // #components=4
-        public static string VEC4 = "VEC4";
-        // #components=4
-        public static string MAT2 = "MAT2";
-        // #components=9
-        public static string MAT3 = "MAT3";
-        // #components=16
-        public static string MAT4 = "MAT4";
-
-        // bufferview.target
-        // array of data such as vertices
-        public static int ARRAY_BUFFER = 34962;
-        // array of indices
-        public static int ELEMENT_ARRAY_BUFFER = 34963;
-
-        public static uint GLB_MAGIC_BYTE = 0x46546C67;
-        public static uint CHUNK_TYPE_JSON = 0x4E4F534A;
-        public static uint CHUNK_TYPE_BINARY = 0x004E4942;
-    }
-
-    public class Material
-    {
-        public string name;
-        public MaterialMetalicRoughness pbrMetallicRoughness;
-
-        [JsonIgnore]
-        public Guid Id;
-
-        public Material(Rhino.DocObjects.Material material)
-        {
-            Id = material.Id;
-            name = material.Name;
-
-            var diffuseColor = new float[4] {
-                Convert.ToSingle(Convert.ToInt32(material.DiffuseColor.R)) / 255.0f,
-                Convert.ToSingle(Convert.ToInt32(material.DiffuseColor.G)) / 255.0f,
-                Convert.ToSingle(Convert.ToInt32(material.DiffuseColor.B)) / 255.0f,
-                1.0f
-            };
-
-            pbrMetallicRoughness = new MaterialMetalicRoughness() {
-                baseColorFactor = diffuseColor,
-                metallicFactor = (float)material.Reflectivity,
-                roughnessFactor = 0.5f
-            };
-        }
-
-        public Material(Rhino.DocObjects.PhysicallyBasedMaterial physMat)
-        {
-            Id = physMat.Material.Id;
-            name = physMat.Material.Name;
-
-
-            var diffuseColor = new float[4] {
-                physMat.BaseColor.R,
-                physMat.BaseColor.G,
-                physMat.BaseColor.B,
-                physMat.BaseColor.A
-            };
-
-            pbrMetallicRoughness = new MaterialMetalicRoughness()
-            {
-                baseColorFactor = diffuseColor,
-                metallicFactor = (float)physMat.Metallic,
-                roughnessFactor = (float)physMat.Roughness
-            };
-        }
-    }
-
-    public class BaseColorTexture
-    {
-        public int index;
-        public int texCoord;
-    }
-
-    public class Texture
-    {
-        public int source;
-        public int sampler;
-    }
-
-    public class Image
-    {
-        public int bufferView;
-        public string mimeType;
-    }
-
-    public class Sampler
-    {
-        public int magFilter = 9792;
-        public int minFilter = 9987;
-        public int wrapS = 10497;
-        public int wrapT = 10497;
-    }
-
-    public class MaterialMetalicRoughness
-    {
-        public float[] baseColorFactor;
-        public float metallicFactor;
-        public float roughnessFactor;
-        public BaseColorTexture baseColorTexture;
-        public BaseColorTexture metallicRoughnessTexture;
-
-        public MaterialMetalicRoughness()
-        {
-            baseColorFactor = new float[4] { 0.3f, 0.3f, 0.3f, 1.0f };
-            metallicFactor = 0.3f;
-            roughnessFactor = 0.3f;
-        }
-    }
-
+    /// <summary>
+    /// RootModel represents the entire glTF encoding. It's a two step process:
+    /// 1) add any objects that are to be included in the result, using the approriate Add*(...) method.
+    /// 2) dump the contents to a file with SerializeToGLB(...) or SerializeToJSON(...)
+    /// </summary>
     public class RootModel
     {
         public int scene;
@@ -195,7 +70,7 @@ namespace Stykka.Common.glTF
             materials = new List<Material>();
             images = new List<Image>();
             textures = new List<Texture>();
-            // TODO: Using a default sampler here.
+            // TODO: Using a default sampler here. Should maybe be configurable?
             // Put a default sampler in pos0
             samplers = new List<Sampler>() { new Sampler() };
         }
@@ -204,7 +79,7 @@ namespace Stykka.Common.glTF
         {
             var settings = new JsonSerializerSettings
             {
-                // This is _super_ important. Otherwise null values are sprayed into the gltf.
+                // This is _super_ important. Otherwise null values are serialized to the gltf.
                 NullValueHandling = NullValueHandling.Ignore
             };
             return JsonConvert.SerializeObject(this, Formatting.Indented, settings);
@@ -220,6 +95,10 @@ namespace Stykka.Common.glTF
             }
         }
 
+        /// <summary>
+        /// After all RhinoObjects have been Add'ed to the RootModel, this method serializes the content of the model to a MemoryStream.
+        /// </summary>
+        /// <param name="memoryStream"></param>
         public void SerializeToGLB(in MemoryStream memoryStream)
         {
             // "buffers": [
@@ -239,7 +118,7 @@ namespace Stykka.Common.glTF
                 uint[] binChunkHeader = new uint[] {
                     // Temporarily setting the length to zero, because we don't know it yet.
                     Convert.ToUInt32(0),
-                    GlConstants.CHUNK_TYPE_BINARY
+                    GLConstants.CHUNK_TYPE_BINARY
                 };
                 byte[] binChunkHeaderBytes = binChunkHeader.SelectMany(BitConverter.GetBytes).ToArray();
                 binaryChunk.Write(binChunkHeaderBytes, 0, binChunkHeaderBytes.Length);
@@ -276,7 +155,7 @@ namespace Stykka.Common.glTF
                 // ChunkHeader = { <chunklength (inc. header=8 bytes)>, <chunky type = json> }
                 uint[] jsonChunkHeader = new uint[] {
                     Convert.ToUInt32(0),
-                    GlConstants.CHUNK_TYPE_JSON
+                    GLConstants.CHUNK_TYPE_JSON
                 };
                 byte[] jsonChunkHeaderBytes = jsonChunkHeader.SelectMany(BitConverter.GetBytes).ToArray();
                 jsonChunk.Write(jsonChunkHeaderBytes, 0, jsonChunkHeaderBytes.Length);
@@ -291,7 +170,7 @@ namespace Stykka.Common.glTF
                 // Then write the header { <magic byte>, <gltf version>, <total size of file> }
                 // TODO: Don't forget to change the size param (the last)!!!
                 uint[] header = new uint[3] {
-                    GlConstants.GLB_MAGIC_BYTE,
+                    GLConstants.GLB_MAGIC_BYTE,
                     Convert.ToUInt32(2),
                     Convert.ToUInt32(12 + jsonChunk.Length + binaryChunk.Length)
                 };
@@ -306,12 +185,14 @@ namespace Stykka.Common.glTF
             }
         }
 
-        public void AddRhinoObjectDraco(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material)
+        public void AddRhinoObjectDraco(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid renderMatId)
         {
-            int currentMaterialIdx = materials.FindIndex(m => m.Id == material.Id);
+            // Check if we already added the Material to the glb
+            //material.
+            int currentMaterialIdx = materials.FindIndex(m => m.Id == renderMatId);
             if (currentMaterialIdx == -1)
             {
-                AddMaterial(material);
+                AddMaterial(material, renderMatId);
                 currentMaterialIdx = materials.Count - 1;
             }
 
@@ -430,7 +311,7 @@ namespace Stykka.Common.glTF
             scenes[scene].nodes.Add(nodes.Count - 1);
         }
 
-        private BaseColorTexture AddPBRBaseTexture(string texturePath) {
+        private int AddTextureToBuffers(string texturePath) {
             var textureBuffer = new Buffer(ExportOptions.UseBinary);
             textureBuffer.ReadFileFromPath(texturePath);
             buffers.Add(textureBuffer);
@@ -449,11 +330,37 @@ namespace Stykka.Common.glTF
             var texture = new Texture() { source = imageIdx, sampler = 0 };
             textures.Add(texture);
             int textureIdx = textures.Count - 1;
-
-            return new BaseColorTexture() { index = textureIdx, texCoord = 0 };
+            return textureIdx;
         }
 
-        public BaseColorTexture AddMetallicRoughnessTexture(Rhino.DocObjects.Material rhinoMaterial) {
+        private TextureBaseColor AddPBRBaseTexture(string texturePath) {
+            int textureIdx = AddTextureToBuffers(texturePath);
+
+            return new TextureBaseColor() { index = textureIdx, texCoord = 0 };
+        }
+
+        private TextureNormal AddTextureNormal(string texturePath)
+        {
+            int textureIdx = AddTextureToBuffers(texturePath);
+
+            return new TextureNormal() { index = textureIdx, texCoord = 0, scale = 0.9f };
+        }
+
+        private TextureOcclusion AddTextureOcclusion(string texturePath)
+        {
+            int textureIdx = AddTextureToBuffers(texturePath);
+
+            return new TextureOcclusion() { index = textureIdx, texCoord = 0, strength = 0.9f };
+        }
+
+        private TextureEmissive AddTextureEmissive(string texturePath)
+        {
+            int textureIdx = AddTextureToBuffers(texturePath);
+
+            return new TextureEmissive() { index = textureIdx, texCoord = 0 };
+        }
+
+        public TextureBaseColor AddMetallicRoughnessTexture(Rhino.DocObjects.Material rhinoMaterial) {
             // glTF metallicRoughness expects a texture with metal in the green channel and roughness in the blue channel.
             // This method mashes the two textures into a PNG, then writes it to a texture buffer.
 
@@ -519,12 +426,13 @@ namespace Stykka.Common.glTF
                         g = imgRoughness[(y * width + x) * 4 + 2]; // Note: Not sure if this offset is the green or the blue channel
                     }
 
-                    bitmap.SetPixel(x, height - y - 1, Color.FromArgb(0, g, b));
+                    // GLTF expects metallic and roughness textures to be in linear color space.
+                    //TODO: This doesn't seem right... var color = ColorUtils.ConvertSRGBToLinear(new Color4f(0, g / 255.0f, b / 255.0f, 1.0f));
+                    // Using it without gammacorrecting for now.
+		            var color = new Color4f(0, g / 255.0f, b / 255.0f, 1.0f);
+                    bitmap.SetPixel(x, height - y - 1, color.AsSystemColor());
                 }
             }
-
-            // DEBUG
-            //bitmap.Save("/Users/aske/Projects/glTF-BinExporter/metallicRoughness.png", System.Drawing.Imaging.ImageFormat.Png);
 
             var textureBuffer = new Buffer(ExportOptions.UseBinary);
 
@@ -553,26 +461,35 @@ namespace Stykka.Common.glTF
             textures.Add(texture);
             int textureIdx = textures.Count - 1;
 
-            return new BaseColorTexture() { index = textureIdx, texCoord = 0 };
+            return new TextureBaseColor() { index = textureIdx, texCoord = 0 };
         }
 
-        public void AddMaterial(Rhino.DocObjects.Material rhinoMaterial) {
+        public void AddMaterial(Rhino.DocObjects.Material rhinoMaterial, Guid renderMatId) {
             // Prep
-            var material = rhinoMaterial.IsPhysicallyBased ? new Material(rhinoMaterial.PhysicallyBased) : new Material(rhinoMaterial);
+            var material = rhinoMaterial.IsPhysicallyBased ? new Material(rhinoMaterial.PhysicallyBased, renderMatId) : new Material(rhinoMaterial, renderMatId);
 
             // Textures
             Rhino.DocObjects.Texture baseColorTexture;
             Rhino.DocObjects.Texture metallicTexture;
             Rhino.DocObjects.Texture roughnessTexture;
+            Rhino.DocObjects.Texture normalTexture;
+            Rhino.DocObjects.Texture occlusionTexture;
+            Rhino.DocObjects.Texture emissiveTexture;
 
             if (rhinoMaterial.IsPhysicallyBased) { 
                 baseColorTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_BaseColor);
                 metallicTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Metallic);
                 roughnessTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Roughness);
+                normalTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.Bump);
+                occlusionTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_AmbientOcclusion);
+                emissiveTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Emission);
             } else {
                 baseColorTexture = rhinoMaterial.GetTexture(TextureType.PBR_BaseColor);
                 metallicTexture = rhinoMaterial.GetTexture(TextureType.PBR_Metallic);
                 roughnessTexture = rhinoMaterial.GetTexture(TextureType.PBR_Roughness);
+                normalTexture = rhinoMaterial.GetTexture(TextureType.Bump);
+                occlusionTexture = null; // Oldschool shaders don't have this.
+                emissiveTexture = null; // TODO: Don't know where to pull this from. It should be there...
             }
 
             if (baseColorTexture != null) {
@@ -584,11 +501,24 @@ namespace Stykka.Common.glTF
                 material.pbrMetallicRoughness.metallicRoughnessTexture = AddMetallicRoughnessTexture(rhinoMaterial);
             }
 
+            if (normalTexture != null) { 
+                material.normalTexture = AddTextureNormal(normalTexture.FileReference.FullPath);
+            }
+
+            if (occlusionTexture != null) {
+                material.occlusionTexture = AddTextureOcclusion(occlusionTexture.FileReference.FullPath);
+            }
+
+            if (emissiveTexture != null) {
+                material.emissiveTexture = AddTextureEmissive(emissiveTexture.FileReference.FullPath);
+            }
+
             materials.Add(material);
         }
 
-        public void AddRhinoObject(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material)
+        public void AddRhinoObject(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid renderMatId)
         {
+            // TODO: Disabled for now. Don't have bandwidth to fix none-DracoCompression for now. Beware of lot's of "old" code below.
             //int currentMaterialIdx = materials.FindIndex(m => m.Id == material.Id);
             //if (currentMaterialIdx == -1)
             //{
@@ -673,336 +603,5 @@ namespace Stykka.Common.glTF
 
             //scenes[scene].nodes.Add(nodes.Count - 1);
         }
-    }
-
-    public class Asset {
-        public string version;
-
-        public Asset()
-        {
-            version = "2.0";
-        }
-    }
-
-    public class Mesh
-    {
-        public IEnumerable<Primitive> primitives;
-
-        public Mesh() { }
-    }
-
-    public class Primitive
-    {
-        public Attribute attributes;
-        public int indices;
-        public int material;
-        public object extensions;
-    }
-
-    public class Attribute
-    {
-        public int POSITION;
-        public int? NORMAL;
-        public int? TEXCOORD_0;
-    }
-
-    public class Buffer
-    {
-        public string uri;
-        public int byteLength;
-
-        [JsonIgnore]
-        public int PrimitiveCount;
-
-        [JsonIgnore]
-        public bool IsGLBinaryMode;
-
-        // dump to byte[] with ".flatten" + .ToArray();
-        public List<IEnumerable<byte>> RawBytes;
-
-        public bool ShouldSerializeRawBytes() {
-            return !IsGLBinaryMode;
-        }
-
-        [JsonIgnore]
-        public int binaryOffset;
-
-        public Buffer(bool IsGLBinaryMode)
-        {
-            this.IsGLBinaryMode = IsGLBinaryMode;
-            RawBytes = new List<IEnumerable<byte>>();
-
-            if (!IsGLBinaryMode)
-            {
-                uri = "data:application/octet-stream;base64,";
-            }
-        }
-
-        public void Add(float[] floats)
-        {
-            // Switch GL coords for Y<=>Z
-            IEnumerable<byte> byteList = floats.SelectMany(value => BitConverter.GetBytes(value));
-            if (!IsGLBinaryMode)
-            {
-                uri += Convert.ToBase64String(byteList.ToArray());
-                // 4 bytes / float * 3 (x,y,z)
-                //byteLength += 4 * 3;
-            }
-            else
-            {
-                RawBytes.Add(byteList);
-            }
-            byteLength += byteList.Count();
-        }
-
-        public void Add(Point3d point)
-        {
-            // Switch GL coords for Y<=>Z
-            float[] coords = new float[] { (float)point.X, (float)point.Z, -(float)point.Y };
-            Add(coords);
-            PrimitiveCount += 1;
-        }
-
-        public void Add(MeshFace face)
-        {
-            if (face.IsTriangle)
-            {
-                // If the face is a triangle, we serialize the 3 indices to b64
-                // NOTE: A, B, C produces f
-                int[] coords = new int[] { face.A, face.B, face.C };
-                IEnumerable<byte> byteList = coords.SelectMany(value => BitConverter.GetBytes(value));
-                if (!IsGLBinaryMode)
-                {
-                    uri += Convert.ToBase64String(byteList.ToArray());
-                    // 4 bytes / int * 3 (A, B, C)
-                    //byteLength += 4 * 3;
-                } else
-                {
-                    RawBytes.Add(byteList);
-                }
-                byteLength += byteList.Count();
-                PrimitiveCount += 3;
-            } else
-            {
-                // If the face is a quad, we serialize the 4 indices in two batches of 3 to b64
-                int[] coords = new int[] { face.A, face.B, face.C, face.A, face.C, face.D };
-                IEnumerable<byte> byteList = coords.SelectMany(value => BitConverter.GetBytes(value));
-                if (!IsGLBinaryMode)
-                {
-                    uri += Convert.ToBase64String(byteList.ToArray());
-                    // 4 bytes / int * 6 (A, B, C, A, C, D)
-                    //byteLength += 4 * 6;
-                } else
-                {
-                    RawBytes.Add(byteList);
-                }
-                byteLength += byteList.Count();
-                PrimitiveCount += 6;
-            }
-        }
-
-        public class DracoGeoInfo
-        {
-            public bool success;
-
-            public int verticesNum;
-            public float[] verticesMin;
-            public float[] verticesMax;
-
-            public int trianglesNum;
-            public int trianglesMin;
-            public int trianglesMax;
-
-            public int normalsNum;
-            public float[] normalsMin;
-            public float[] normalsMax;
-
-            public int texCoordsNum;
-            public float[] texCoordsMin;
-            public float[] texCoordsMax;
-        }
-
-        public DracoGeoInfo Add(DracoCompression dracoCompression)
-        {
-            // Switch GL coords for Y<=>Z
-            //float[] coords = new float[] { (float)point.X, (float)point.Z, -(float)point.Y };
-            //IEnumerable<byte> byteList = coords.SelectMany(value => BitConverter.GetBytes(value));
-
-            var dracoGeoInfo = new DracoGeoInfo();
-            string filePath = Path.GetTempFileName();
-            try
-            {
-                dracoCompression.Write(filePath);
-
-                using (FileStream stream = File.Open(filePath, FileMode.Open))
-                {
-                    var bytes = new byte[stream.Length];
-                    stream.Read(bytes, 0, (int)stream.Length);
-                    RawBytes.Add(bytes);
-                }
-
-                // DEBUG
-                //File.Copy(filePath, @"/Users/aske/Desktop/rawfile.drc");
-
-                // Draco compression might change the number of vertices, tris, normals.
-                // Decompress the file again to get the correct geometry stats.
-                var geo = DracoCompression.DecompressFile(filePath);
-                if (geo.ObjectType == ObjectType.Mesh) {
-                    var mesh = (Rhino.Geometry.Mesh)geo;
-                    Point2f point2f;
-                    Point3f point3f;
-                    Vector3f vector3f;
-                    // Vertices Stats
-                    dracoGeoInfo.verticesNum = mesh.Vertices.Count;
-                    point3f = mesh.Vertices.Min();
-                    dracoGeoInfo.verticesMin = new float[] { point3f.X, point3f.Y, point3f.Z };
-                    point3f = mesh.Vertices.Max();
-                    dracoGeoInfo.verticesMax = new float[] { point3f.X, point3f.Y, point3f.Z };
-
-                    // Triangle Stats
-                    dracoGeoInfo.trianglesNum = mesh.Faces.TriangleCount;
-                    dracoGeoInfo.trianglesMin = 0;
-                    dracoGeoInfo.trianglesMax = dracoGeoInfo.verticesNum - 1;
-
-                    // Normals Stats
-                    dracoGeoInfo.normalsNum = mesh.Normals.Count;
-                    vector3f = mesh.Normals.Min();
-                    dracoGeoInfo.normalsMin = new float[] { vector3f.X, vector3f.Y, vector3f.Z };
-                    vector3f = mesh.Normals.Max();
-                    dracoGeoInfo.normalsMax = new float[] { vector3f.X, vector3f.Y, vector3f.Z };
-
-                    // TexCoord Stats
-                    dracoGeoInfo.texCoordsNum = mesh.TextureCoordinates.Count;
-                    point2f = mesh.TextureCoordinates.Min();
-                    dracoGeoInfo.texCoordsMin = new float[] { point2f.X, point2f.Y };
-                    point2f = mesh.TextureCoordinates.Max();
-                    dracoGeoInfo.texCoordsMax = new float[] { point2f.X, point2f.Y };
-
-                    dracoGeoInfo.success = true;
-                }
-                geo.Dispose();
-                dracoCompression.Dispose();
-            }
-            finally
-            {
-                File.Delete(filePath);
-            }
-
-            byteLength += RawBytes.Count;
-            PrimitiveCount += 1;
-
-            return dracoGeoInfo;
-        }
-
-        public void ReadFileFromPath(string filePath)
-        {
-            using (FileStream stream = File.Open(filePath, FileMode.Open))
-            {
-                var bytes = new byte[stream.Length];
-                stream.Read(bytes, 0, (int)stream.Length);
-                RawBytes.Add(bytes);
-            }
-    
-            byteLength += RawBytes.Count;
-            PrimitiveCount += 1;
-        }
-
-        public void ReadPNGFromStream(Stream stream)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
-            var bytes = new byte[stream.Length];
-            stream.Read(bytes, 0, (int)stream.Length);
-            RawBytes.Add(bytes);
-
-            byteLength += RawBytes.Count;
-            PrimitiveCount += 1;
-        }
-    }
-
-    public class BufferView
-    {
-        public int buffer;
-        public int byteOffset;
-        public int byteLength;
-        public int? target;
-
-        [JsonIgnore]
-        public Buffer bufferRef;
-    }
-
-    public class Accessor
-    {
-        public int bufferView;
-        public int byteOffset;
-        public int componentType;
-        public int count;
-        public string type;
-    }
-
-    public class AccessorScalar : Accessor
-    {
-        public int max;
-        public int min;
-
-        public AccessorScalar()
-        {
-            byteOffset = 0;
-            componentType = GlConstants.UNSIGNED_INT;
-            type = GlConstants.SCALAR;
-        }
-    }
-
-    public class AccessorVec2 : Accessor
-    {
-        public float[] max;
-        public float[] min;
-
-        public AccessorVec2()
-        {
-            byteOffset = 0;
-            componentType = GlConstants.FLOAT;
-            type = GlConstants.VEC2;
-            max = new float[] { 1.0f, 1.0f };
-            min = new float[] { 0.0f, 0.0f };
-        }
-    }
-
-    public class AccessorVec3 : Accessor
-    {
-        public float[] max;
-        public float[] min;
-
-        public AccessorVec3()
-        {
-            byteOffset = 0;
-            componentType = GlConstants.FLOAT;
-            type = GlConstants.VEC3;
-            max = new float[] { 1.0f, 1.0f, 1.0f };
-            min = new float[] { 0.0f, 0.0f, 0.0f };
-        }
-    }
-
-    public class Scene
-    {
-        public List<int> nodes;
-
-        public Scene()
-        {
-            nodes = new List<int>();
-        }
-    }
-
-    public class Node
-    {
-        //// This is this nodes assigned index in the node array.
-        //public int nodesArrayIndex;
-        //public Matrix matrix;
-        //public List<int> children;
-        public int mesh;
-    }
-
-    public class Matrix
-    {
-        public List<double> values;
     }
 }
