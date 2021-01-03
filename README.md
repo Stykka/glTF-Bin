@@ -14,13 +14,14 @@ Everything you need to know about glTF is available on this poster: https://gith
 Contributions and bug reports are welcome.
 
 ## Build Releases and Deploying
-This project uses the PackageManger for managing the user releases.
+This project uses the Rhino7 and above `PackageManger` for managing the user releases.
 Building and deploying for both Win and Mac can be done with:
 ```
 $ cd bin/Release/net48
 $ /Applications/Rhino\ 7.app/Contents/Resources/bin/yak build
 $ /Applications/Rhino\ 7.app/Contents/Resources/bin/yak push gltf-binexporter-XXXXXXX-any.yak
 ```
+
 # Sponsors
 [Stykka ApS](https://stykka.com)
 
@@ -29,3 +30,4 @@ $ /Applications/Rhino\ 7.app/Contents/Resources/bin/yak push gltf-binexporter-XX
 
 # License
 MIT but please make PRs if you make improvements.
+
