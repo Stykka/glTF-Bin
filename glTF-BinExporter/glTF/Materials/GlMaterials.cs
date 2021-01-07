@@ -32,7 +32,7 @@ namespace glTF_BinExporter.glTF
                 color.R,
                 color.G,
                 color.B,
-                material.DiffuseColor.A
+                color.A
             };
 
             pbrMetallicRoughness = new MaterialMetalicRoughness()
@@ -55,7 +55,7 @@ namespace glTF_BinExporter.glTF
                 color.R,
                 color.G,
                 color.B,
-                physMat.BaseColor.A
+                color.A
             };
 
             pbrMetallicRoughness = new MaterialMetalicRoughness()
