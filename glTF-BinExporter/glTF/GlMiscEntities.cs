@@ -57,11 +57,13 @@ namespace glTF_BinExporter.glTF
 
     public class AccessorScalar : Accessor
     {
-        public int max;
-        public int min;
+        public int[] max;
+        public int[] min;
 
         public AccessorScalar()
         {
+            min = new int[] { 0 };
+            max = new int[] { 1 };
             byteOffset = 0;
             componentType = GLConstants.UNSIGNED_INT;
             type = GLConstants.SCALAR;

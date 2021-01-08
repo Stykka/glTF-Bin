@@ -255,8 +255,8 @@ namespace glTF_BinExporter.glTF
                 var idsAccessor = new AccessorScalar
                 {
                     count = dracoGeoInfo.trianglesNum,
-                    min = dracoGeoInfo.trianglesMin,
-                    max = dracoGeoInfo.trianglesMax
+                    min = new int[] { dracoGeoInfo.trianglesMin },
+                    max = new int[] { dracoGeoInfo.trianglesMax }
                 };
                 accessors.Add(idsAccessor);
                 int idsAccessorIdx = accessors.Count - 1;
