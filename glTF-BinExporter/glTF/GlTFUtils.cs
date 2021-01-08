@@ -68,8 +68,8 @@ namespace glTF_BinExporter.glTF
             foreach (var rhinoObject in rhinoObjects)
             {
                 // FIXME: This is broken. Even though objects use the same material, different Materials are returned here.
-                var renderMatId = rhinoObject.RenderMaterial.Id;
                 var mat = rhinoObject.GetMaterial(true);
+                var renderMatId = mat.Id;
                 bool isPBR = mat.IsPhysicallyBased;
 
                 // This is always true when called from the Main plugin command, as it uses the same ObjectType array as filter.
