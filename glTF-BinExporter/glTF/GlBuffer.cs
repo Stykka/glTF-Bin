@@ -29,6 +29,7 @@ namespace glTF_BinExporter.glTF
         public bool IsGLBinaryMode;
 
         // dump to byte[] with ".flatten" + .ToArray();
+        [JsonIgnore]
         public List<IEnumerable<byte>> RawBytes;
 
         public bool ShouldSerializeRawBytes()
