@@ -157,5 +157,12 @@ namespace glTF_BinExporter.glTF
 
             outStream.Flush();
         }
+
+        public static int AddAndReturnIndex<T>(this List<T> list, T item)
+        {
+            list.Add(item);
+            return list.Count - 1;
+        }
+
     }
 }

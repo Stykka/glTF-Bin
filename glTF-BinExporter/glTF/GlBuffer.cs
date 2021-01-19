@@ -29,6 +29,7 @@ namespace glTF_BinExporter.glTF
         public bool IsGLBinaryMode;
 
         // dump to byte[] with ".flatten" + .ToArray();
+        [JsonIgnore]
         public List<IEnumerable<byte>> RawBytes;
 
         public bool ShouldSerializeRawBytes()
@@ -71,6 +72,22 @@ namespace glTF_BinExporter.glTF
         {
             // Switch GL coords for Y<=>Z
             float[] coords = new float[] { (float)point.X, (float)point.Z, -(float)point.Y };
+            Add(coords);
+            PrimitiveCount += 1;
+        }
+
+        public void Add(Vector3d point)
+        {
+            // Switch GL coords for Y<=>Z
+            float[] coords = new float[] { (float)point.X, (float)point.Z, -(float)point.Y };
+            Add(coords);
+            PrimitiveCount += 1;
+        }
+
+        public void Add(Point2f point)
+        {
+            // Switch GL coords for Y<=>Z
+            float[] coords = new float[] { (float)point.X, -(float)point.Y };
             Add(coords);
             PrimitiveCount += 1;
         }
