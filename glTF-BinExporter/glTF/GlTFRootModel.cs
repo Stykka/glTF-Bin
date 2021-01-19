@@ -664,8 +664,8 @@ namespace glTF_BinExporter.glTF
                 {
                     bufferView = texCoordsBufferViewIdx,
                     count = rhinoMesh.TextureCoordinates.Count,
-                    min = new float[] { 0.0f, 0.0f },
-                    max = new float[] { 1.0f, 1.0f },
+                    min = new float[] { (float)texCoordsMin.X, (float)texCoordsMin.Y },
+                    max = new float[] { (float)texCoordsMax.X, (float)texCoordsMax.Y }
                 };
                 int texCoordsAccessorIdx = accessors.AddAndReturnIndex(texCoordsAccessor);
 
