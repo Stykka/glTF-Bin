@@ -76,6 +76,22 @@ namespace glTF_BinExporter.glTF
             PrimitiveCount += 1;
         }
 
+        public void Add(Vector3d point)
+        {
+            // Switch GL coords for Y<=>Z
+            float[] coords = new float[] { (float)point.X, (float)point.Z, -(float)point.Y };
+            Add(coords);
+            PrimitiveCount += 1;
+        }
+
+        public void Add(Point2f point)
+        {
+            // Switch GL coords for Y<=>Z
+            float[] coords = new float[] { (float)point.X, -(float)point.Y };
+            Add(coords);
+            PrimitiveCount += 1;
+        }
+
         public void Add(MeshFace face)
         {
             if (face.IsTriangle)

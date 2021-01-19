@@ -535,22 +535,21 @@ namespace glTF_BinExporter.glTF
             {
                 // Create buffers for data (position, normals, indices etc.)
                 var vtxBuffer = new Buffer(ExportOptions.UseBinary);
-
-                var min = new Point3d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity, Z = Double.PositiveInfinity };
-                var max = new Point3d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity, Z = Double.NegativeInfinity };
+                var vtxMin = new Point3d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity, Z = Double.PositiveInfinity };
+                var vtxMax = new Point3d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity, Z = Double.NegativeInfinity };
                 foreach (var p in rhinoMesh.Vertices)
                 {
                     vtxBuffer.Add(p);
 
-                    min.X = Math.Min(min.X, p.X);
+                    vtxMin.X = Math.Min(vtxMin.X, p.X);
                     // Switch Y<=>Z for GL coords
-                    min.Y = Math.Min(min.Y, p.Z);
-                    min.Z = Math.Min(min.Z, -p.Y);
+                    vtxMin.Y = Math.Min(vtxMin.Y, p.Z);
+                    vtxMin.Z = Math.Min(vtxMin.Z, -p.Y);
 
-                    max.X = Math.Max(max.X, p.X);
+                    vtxMax.X = Math.Max(vtxMax.X, p.X);
                     // Switch Y<=>Z for GL coords
-                    max.Y = Math.Max(max.Y, p.Z);
-                    max.Z = Math.Max(max.Z, -p.Y);
+                    vtxMax.Y = Math.Max(vtxMax.Y, p.Z);
+                    vtxMax.Z = Math.Max(vtxMax.Z, -p.Y);
                 }
                 buffers.Add(vtxBuffer);
                 int vtxBufferIdx = buffers.Count - 1;
@@ -564,11 +563,41 @@ namespace glTF_BinExporter.glTF
                 int idsBufferIdx = buffers.Count - 1;
 
                 Buffer normalsBuffer = new Buffer(ExportOptions.UseBinary);
-                normalsBuffer.Add(rhinoMesh.Normals.ToFloatArray());
+                var normalsMin = new Point3d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity, Z = Double.PositiveInfinity };
+                var normalsMax = new Point3d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity, Z = Double.NegativeInfinity };
+                //normalsBuffer.Add(rhinoMesh.Normals.ToFloatArray());
+                foreach (var n in rhinoMesh.Normals)
+                {
+                    normalsBuffer.Add(n);
+
+                    normalsMin.X = Math.Min(normalsMin.X, n.X);
+                    // Switch Y<=>Z for GL coords
+                    normalsMin.Y = Math.Min(normalsMin.Y, n.Z);
+                    normalsMin.Z = Math.Min(normalsMin.Z, -n.Y);
+
+                    normalsMax.X = Math.Max(normalsMax.X, n.X);
+                    // Switch Y<=>Z for GL coords
+                    normalsMax.Y = Math.Max(normalsMax.Y, n.Z);
+                    normalsMax.Z = Math.Max(normalsMax.Z, -n.Y);
+                }
                 int normalsIdx = buffers.AddAndReturnIndex(normalsBuffer);
 
                 Buffer texCoordsBuffer = new Buffer(ExportOptions.UseBinary);
-                texCoordsBuffer.Add(rhinoMesh.TextureCoordinates.ToFloatArray());
+                var texCoordsMin = new Point2d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity };
+                var texCoordsMax = new Point2d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity };
+                foreach (var tx in rhinoMesh.TextureCoordinates)
+                {
+                    texCoordsBuffer.Add(tx);
+
+                    texCoordsMin.X = Math.Min(texCoordsMin.X, tx.X);
+                    // Switch Y<=>Z for GL coords
+                    texCoordsMin.Y = Math.Min(texCoordsMin.Y, -tx.Y);
+
+                    texCoordsMax.X = Math.Max(texCoordsMax.X, tx.X);
+                    // Switch Y<=>Z for GL coords
+                    texCoordsMax.Y = Math.Max(texCoordsMax.Y, -tx.Y);
+                }
+
                 int texCoordsIdx = buffers.AddAndReturnIndex(texCoordsBuffer);
 
                 // Create bufferviews
@@ -605,8 +634,8 @@ namespace glTF_BinExporter.glTF
                 {
                     bufferView = vtxBufferViewIdx,
                     count = vtxBuffer.PrimitiveCount,
-                    min = new float[] { (float)min.X, (float)min.Y, (float)min.Z },
-                    max = new float[] { (float)max.X, (float)max.Y, (float)max.Z }
+                    min = new float[] { (float)vtxMin.X, (float)vtxMin.Y, (float)vtxMin.Z },
+                    max = new float[] { (float)vtxMax.X, (float)vtxMax.Y, (float)vtxMax.Z }
                 };
 
                 accessors.Add(vtxAccessor);
@@ -626,8 +655,8 @@ namespace glTF_BinExporter.glTF
                 {
                     bufferView = normalsBufferViewIdx,
                     count = rhinoMesh.Normals.Count,
-                    min = new float[] { -1.0f, -1.0f, -1.0f },
-                    max = new float[] { 1.0f, 1.0f, 1.0f },
+                    min = new float[] { (float)normalsMin.X, (float)normalsMin.Y, (float)normalsMin.Z },
+                    max = new float[] { (float)normalsMax.X, (float)normalsMax.Y, (float)normalsMax.Z }
                 };
                 int normalsAccessorIdx = accessors.AddAndReturnIndex(normalsAccessor);
 
