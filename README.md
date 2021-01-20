@@ -24,6 +24,7 @@ $ /Applications/Rhino\ 7.app/Contents/Resources/bin/yak push gltf-binexporter-XX
 
 # Sponsors
 [Stykka ApS](https://stykka.com)
+[McNeel](https://rhino3d.com)
 
 # Contributors
 [Aske Doerge](https://github.com/Doerge) (original author)
