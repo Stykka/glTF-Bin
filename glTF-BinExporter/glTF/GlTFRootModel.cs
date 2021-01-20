@@ -56,9 +56,9 @@ namespace glTF_BinExporter.glTF
         }
 
         [JsonIgnore]
-        public ExportOptions ExportOptions;
+        public glTFExportOptions ExportOptions;
 
-        public RootModel(ExportOptions exportOptions)
+        public RootModel(glTFExportOptions exportOptions)
         {
             this.ExportOptions = exportOptions;
             asset = new Asset();

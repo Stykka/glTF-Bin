@@ -5,16 +5,10 @@ using Rhino.UI;
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace glTF_BinExporter.glTF
 {
-    public class ExportOptions
-    {
-        public bool UseDracoCompression;
-        public bool UseBinary;
-        public int DracoCompressionLevel;
-        public int DracoQuantizationBits;
-    }
 
     [System.Runtime.InteropServices.Guid("82936404-bd41-46f4-8fe7-e594c2a7e8af")]
     public class GlTFExporterCommand : Rhino.Commands.Command
@@ -35,36 +29,71 @@ namespace glTF_BinExporter.glTF
         {
             GetObject go = Selection.GetValidExportObjects("Select objects to export.");
 
-            var opts = new ExportOptions() { UseDracoCompression = false, DracoCompressionLevel = 10, DracoQuantizationBits = 16, UseBinary = true };
-
-            Rhino.Input.RhinoGet.GetBool("Binary or Text", true, "Text", "Binary", ref opts.UseBinary);
-
-            Rhino.Input.RhinoGet.GetBool("Compression", true, "None", "Draco", ref opts.UseDracoCompression);
-
-            if (opts.UseDracoCompression)
-            {
-                Rhino.Input.RhinoGet.GetInteger("Draco Compression Level (max=10)", true, ref opts.DracoCompressionLevel, 1, 10);
-                Rhino.Input.RhinoGet.GetInteger("Quantization", true, ref opts.DracoQuantizationBits, 8, 32);
-            }
-
-            var dialog = GetSaveFileDialog(opts.UseBinary);
+            var dialog = GetSaveFileDialog();
 
             var fileSelected = dialog.ShowSaveDialog();
 
-            if (!fileSelected) {
+            if (!fileSelected)
+            {
                 return Result.Cancel;
             }
 
+            bool binary = GlTFUtils.IsFileGltfBinary(dialog.FileName);
+
+            var opts = new glTFExportOptions() { UseDracoCompression = false, DracoCompressionLevel = 10, DracoQuantizationBits = 16, UseBinary = binary };
+
+            if (mode == RunMode.Scripted)
+            {
+
+                Rhino.Input.RhinoGet.GetBool("Compression", true, "None", "Draco", ref opts.UseDracoCompression);
+
+                if (opts.UseDracoCompression)
+                {
+                    Rhino.Input.RhinoGet.GetInteger("Draco Compression Level (max=10)", true, ref opts.DracoCompressionLevel, 1, 10);
+                    Rhino.Input.RhinoGet.GetInteger("Quantization", true, ref opts.DracoQuantizationBits, 8, 32);
+                }
+            }
+            else
+            {
+                ExportOptionsDialog optionsDlg = new ExportOptionsDialog(opts);
+
+                if (optionsDlg.ShowModal() == null)
+                {
+                    return Result.Cancel;
+                }
+            }
+
+            var rhinoObjects = go
+                                .Objects()
+                                .Select(o => o.Object())
+                                .ToArray();
+
+            if(!DoExport(dialog.FileName, opts, rhinoObjects))
+            {
+                return Result.Failure;
+            }
+
+            return Result.Success;
+        }
+
+        private SaveFileDialog GetSaveFileDialog()
+        {
+            return new SaveFileDialog()
+            {
+                DefaultExt = ".glb",
+                Title = "Select glTF file to export to.",
+                Filter = "glTF Binary (*.glb) | *.glb |glTF Text (*.gltf) | *.gltf",
+            };
+        }
+
+        public static bool DoExport(string fileName, glTFExportOptions opts, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects)
+        {
             try
             {
                 // Writes the result to a memory stream, then dumps it to a file.
-                using (FileStream fileStream = new FileStream(dialog.FileName, FileMode.Create, FileAccess.ReadWrite))
+                using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite))
                 using (MemoryStream memoryStream = new MemoryStream(1024))
                 {
-                    var rhinoObjects = go
-                        .Objects()
-                        .Select(o => o.Object())
-                        .ToArray();
 
                     if (opts.UseBinary)
                     {
@@ -83,33 +112,13 @@ namespace glTF_BinExporter.glTF
                 }
 
                 RhinoApp.WriteLine("Successfully exported selected geometry to glTF(Binary).");
-                return Result.Success;
-            } catch (Exception e) {
+                return true;
+            }
+            catch (Exception e)
+            {
                 RhinoApp.WriteLine("ERROR: Failed exporting selected geometry to file.");
                 System.Diagnostics.Debug.WriteLine(e.Message);
-                return Result.Failure;
-            }
-        }
-
-        private SaveFileDialog GetSaveFileDialog(bool binaryExport)
-        {
-            if(binaryExport)
-            {
-                return new SaveFileDialog()
-                {
-                    DefaultExt = ".glb",
-                    Title = "Select glTF Binary file to export to.",
-                    Filter = "glTF Binary (*.glb) | *.glb"
-                };
-            }
-            else //Text glTF
-            {
-                return new SaveFileDialog()
-                {
-                    DefaultExt = ".gltf",
-                    Title = "Select glTF file to export to.",
-                    Filter = "glTF Text (*.gltf) | *.gltf"
-                };
+                return false;
             }
         }
 
