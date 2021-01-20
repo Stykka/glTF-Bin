@@ -107,7 +107,7 @@ namespace glTF_BinExporter.glTF
             return rhinoObjectsRes;
         }
 
-        public static void ExportText(MemoryStream outStream, IEnumerable<RhinoObject> rhinoObjects, ExportOptions exportOptions)
+        public static void ExportText(MemoryStream outStream, IEnumerable<RhinoObject> rhinoObjects, glTFExportOptions exportOptions)
         {
             RootModel mdl = new RootModel(exportOptions);
 
@@ -137,7 +137,7 @@ namespace glTF_BinExporter.glTF
             outStream.Flush();
         }
 
-        public static void ExportBinary(MemoryStream outStream, IEnumerable<RhinoObject> rhinoObjects, ExportOptions exportOptions)
+        public static void ExportBinary(MemoryStream outStream, IEnumerable<RhinoObject> rhinoObjects, glTFExportOptions exportOptions)
         {
             RootModel mdl = new RootModel(exportOptions);
 
@@ -162,6 +162,13 @@ namespace glTF_BinExporter.glTF
         {
             list.Add(item);
             return list.Count - 1;
+        }
+
+        public static bool IsFileGltfBinary(string filename)
+        {
+            string extension = Path.GetExtension(filename);
+
+            return extension.ToLower() == ".glb";
         }
 
     }

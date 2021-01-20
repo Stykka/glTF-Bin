@@ -1,4 +1,10 @@
-﻿namespace glTF_BinExporter.glTF
+﻿using Rhino;
+using Rhino.FileIO;
+using Rhino.PlugIns;
+using System.Collections.Generic;
+using System.IO;
+
+namespace glTF_BinExporter.glTF
 {
     ///<summary>
     /// <para>Every RhinoCommon .rhp assembly must have one and only one PlugIn-derived
@@ -8,7 +14,7 @@
     /// attributes in AssemblyInfo.cs (you might need to click "Project" ->
     /// "Show All Files" to see it in the "Solution Explorer" window).</para>
     ///</summary>
-    public class glTF_BinExporterPlugin : Rhino.PlugIns.PlugIn
+    public class glTF_BinExporterPlugin : Rhino.PlugIns.FileExportPlugIn
     {
         ///<summary>Gets the only instance of the glTF_BinExporterPlugin plug-in.</summary>
         public static glTF_BinExporterPlugin Instance { get; private set; }
@@ -18,8 +24,47 @@
             Instance = this;
         }
 
-        // You can override methods here to change the plug-in behavior on
-        // loading and shut down, add options pages to the Rhino _Option command
-        // and mantain plug-in wide options in a document.
+        protected override FileTypeList AddFileTypes(FileWriteOptions options)
+        {
+            FileTypeList typeList = new FileTypeList();
+
+            typeList.AddFileType("glTF Binary File", ".glb");
+            typeList.AddFileType("glTF Text File", ".gltf");
+
+            return typeList;
+        }
+
+        protected override WriteFileResult WriteFile(string filename, int index, RhinoDoc doc, FileWriteOptions options)
+        {
+            bool binary = GlTFUtils.IsFileGltfBinary(filename);
+
+            glTFExportOptions gltfOptions = new glTFExportOptions();
+            gltfOptions.UseBinary = binary;
+
+            ExportOptionsDialog optionsDlg = new ExportOptionsDialog(gltfOptions);
+
+            if(optionsDlg.ShowModal() == null)
+            {
+                return WriteFileResult.Cancel;
+            }
+
+            IEnumerable<Rhino.DocObjects.RhinoObject> objects = GetObjectsToExport(doc, options);
+
+            GlTFExporterCommand.DoExport(filename, gltfOptions, objects);
+
+            return WriteFileResult.Success;
+        }
+
+        private IEnumerable<Rhino.DocObjects.RhinoObject> GetObjectsToExport(RhinoDoc doc, FileWriteOptions options)
+        {
+            if(options.WriteSelectedObjectsOnly)
+            {
+                return doc.Objects.GetSelectedObjects(false, false);
+            }
+            else
+            {
+                return doc.Objects;
+            }
+        }
     }
 }
