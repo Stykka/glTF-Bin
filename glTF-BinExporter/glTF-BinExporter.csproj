@@ -28,4 +28,8 @@
   <ItemGroup>
     <Folder Include="glTF\Materials\" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
+  </ItemGroup>
 </Project>
