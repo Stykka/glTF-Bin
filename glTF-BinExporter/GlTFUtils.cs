@@ -8,7 +8,7 @@ using Rhino.DocObjects;
 using Rhino.Geometry;
 using Rhino.Render;
 
-namespace glTF_BinExporter.glTF
+namespace glTF_BinExporter
 {
     /// <summary>
     /// Functions for helping with adding RhinoObjects to the RootModel.
@@ -74,7 +74,7 @@ namespace glTF_BinExporter.glTF
 
                 // This is always true when called from the Main plugin command, as it uses the same ObjectType array as filter.
                 // Keeping it around in case someone calls this from somewhere else.
-                var isValidGeometry = Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
+                var isValidGeometry = glTF.Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
 
                 if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
                 {
