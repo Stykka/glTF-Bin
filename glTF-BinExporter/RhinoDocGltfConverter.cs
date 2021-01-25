@@ -38,6 +38,11 @@ namespace glTF_BinExporter
             dummy.Scene = 0;
             dummy.Scenes.Add(new gltfSchemaSceneDummy());
 
+            dummy.Asset = new Asset()
+            {
+                Version = "2.0",
+            };
+
             var sanitized = GlTFUtils.SanitizeRhinoObjects(objects);
 
             foreach(Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject> tuple in sanitized)
@@ -53,180 +58,150 @@ namespace glTF_BinExporter
             var primitives = new List<MeshPrimitive>();	
 
             foreach (var rhinoMesh in rhinoMeshes)	
-            {	
-                var vtxBuffer = new glTFLoader.Schema.Buffer();
+            {
+                rhinoMesh.Faces.ConvertQuadsToTriangles();
 
-                var vtxMin = new Point3d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity, Z = Double.PositiveInfinity };	
-                var vtxMax = new Point3d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity, Z = Double.NegativeInfinity };
+                Point3d vtxMin = Point3d.Origin;
+                Point3d vtxMax = Point3d.Origin;
 
-                foreach (var p in rhinoMesh.Vertices)	
-                {	
-                    vtxBuffer.Add(p);
-
-                    vtxMin.X = Math.Min(vtxMin.X, p.X);	
-                    // Switch Y<=>Z for GL coords	
-                    vtxMin.Y = Math.Min(vtxMin.Y, p.Z);	
-                    vtxMin.Z = Math.Min(vtxMin.Z, -p.Y);	
-
-                    vtxMax.X = Math.Max(vtxMax.X, p.X);	
-                    // Switch Y<=>Z for GL coords	
-                    vtxMax.Y = Math.Max(vtxMax.Y, p.Z);	
-                    vtxMax.Z = Math.Max(vtxMax.Z, -p.Y);	
-                }
-                	
+                var vtxBuffer = CreateVerticesBuffer(rhinoMesh.Vertices, out vtxMin, out vtxMax);
                 int vtxBufferIdx = dummy.Buffers.AddAndReturnIndex(vtxBuffer);
 
-                var idsBuffer = new glTFLoader.Schema.Buffer();	
-                foreach (var f in rhinoMesh.Faces)	
-                {	
-                    idsBuffer.Add(f);	
-                }	
-                
+                int indicesCount = 0;
+
+                var idsBuffer = CreateIndicesBuffer(rhinoMesh.Faces, out indicesCount);
                 int idsBufferIdx = dummy.Buffers.AddAndReturnIndex(idsBuffer);
 
-                var normalsBuffer = new glTFLoader.Schema.Buffer();	
-                var normalsMin = new Point3d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity, Z = Double.PositiveInfinity };	
-                var normalsMax = new Point3d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity, Z = Double.NegativeInfinity };	
-                //normalsBuffer.Add(rhinoMesh.Normals.ToFloatArray());	
-                foreach (var n in rhinoMesh.Normals)	
-                {	
-                    normalsBuffer.Add(n);	
+                var normalsMin = Vector3f.Zero;
+                var normalsMax = Vector3f.Zero;
 
-                    normalsMin.X = Math.Min(normalsMin.X, n.X);	
-                    // Switch Y<=>Z for GL coords	
-                    normalsMin.Y = Math.Min(normalsMin.Y, n.Z);	
-                    normalsMin.Z = Math.Min(normalsMin.Z, -n.Y);	
+                var normalsBuffer = CreateMeshNormalsBuffer(rhinoMesh.Normals, out normalsMin, out normalsMax);	
+                int normalsBufferIdx = dummy.Buffers.AddAndReturnIndex(normalsBuffer);
 
-                    normalsMax.X = Math.Max(normalsMax.X, n.X);	
-                    // Switch Y<=>Z for GL coords	
-                    normalsMax.Y = Math.Max(normalsMax.Y, n.Z);	
-                    normalsMax.Z = Math.Max(normalsMax.Z, -n.Y);	
-                }	
-                int normalsIdx = dummy.Buffers.AddAndReturnIndex(normalsBuffer);	
+                Point2f texCoordsMin = new Point2f(0.0f, 0.0f);
+                Point2f texCoordsMax = new Point2f(0.0f, 0.0f);
 
-                var texCoordsBuffer = new glTFLoader.Schema.Buffer();	
-                var texCoordsMin = new Point2d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity };	
-                var texCoordsMax = new Point2d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity };	
-                foreach (var tx in rhinoMesh.TextureCoordinates)	
-                {	
-                    texCoordsBuffer.Add(tx);	
-
-                    texCoordsMin.X = Math.Min(texCoordsMin.X, tx.X);	
-                    // Switch Y<=>Z for GL coords	
-                    texCoordsMin.Y = Math.Min(texCoordsMin.Y, -tx.Y);	
-
-                    texCoordsMax.X = Math.Max(texCoordsMax.X, tx.X);	
-                    // Switch Y<=>Z for GL coords	
-                    texCoordsMax.Y = Math.Max(texCoordsMax.Y, -tx.Y);	
-                }	
-
-                int texCoordsIdx = dummy.Buffers.AddAndReturnIndex(texCoordsBuffer);	
-
-                // Create bufferviews	
+                var texCoordsBuffer = CreateTextureCoordinates(rhinoMesh.TextureCoordinates, out texCoordsMin, out texCoordsMax);
+                int texCoordsBufferIdx = dummy.Buffers.AddAndReturnIndex(texCoordsBuffer);	
+	
                 var vtxBufferView = new BufferView()
                 {
-                    bufferRef = vtxBuffer,
-                    buffer = vtxBufferIdx,
-                    byteOffset = 0,
-                    byteLength = vtxBuffer.byteLength,
-                    target = GLConstants.ARRAY_BUFFER,
+                    Buffer = vtxBufferIdx,
+                    ByteOffset = 0,
+                    ByteLength = vtxBuffer.ByteLength,
+                    Target = BufferView.TargetEnum.ARRAY_BUFFER,
                 };
 
-                bufferViews.Add(vtxBufferView);	
-                int vtxBufferViewIdx = bufferViews.Count - 1;	
+                int vtxBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(vtxBufferView);
 
                 var idsBufferView = new BufferView()
                 {
-                    bufferRef = idsBuffer,
-                    buffer = idsBufferIdx,
-                    byteOffset = 0,
-                    byteLength = idsBuffer.byteLength,
-                    target = GLConstants.ELEMENT_ARRAY_BUFFER
+                    Buffer = idsBufferIdx,
+                    ByteOffset = 0,
+                    ByteLength = idsBuffer.ByteLength,
+                    Target = BufferView.TargetEnum.ELEMENT_ARRAY_BUFFER,
                 };
                 
-                bufferViews.Add(idsBufferView);	
-                int idsBufferViewIdx = bufferViews.Count - 1;	
+                int idsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(idsBufferView);
 
                 BufferView normalsBufferView = new BufferView()	
-                {	
-                    bufferRef = normalsBuffer,	
-                    buffer = normalsIdx,	
-                    byteOffset = 0,	
-                    byteLength = normalsBuffer.byteLength,	
-                    target = GLConstants.ARRAY_BUFFER	
-                };	
-                int normalsBufferViewIdx = bufferViews.AddAndReturnIndex(normalsBufferView);	
+                {
+                    Buffer = normalsBufferIdx,	
+                    ByteOffset = 0,	
+                    ByteLength = normalsBuffer.ByteLength,	
+                    Target = BufferView.TargetEnum.ARRAY_BUFFER,
+                };
 
-                BufferView texCoordsBufferView = new BufferView()	
-                {	
-                    bufferRef = texCoordsBuffer,	
-                    buffer = texCoordsIdx,	
-                    byteOffset = 0,	
-                    byteLength = texCoordsBuffer.byteLength,	
-                    target = GLConstants.ARRAY_BUFFER	
-                };	
-                int texCoordsBufferViewIdx = bufferViews.AddAndReturnIndex(texCoordsBufferView);	
+                int normalsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(normalsBufferView);	
+
+                BufferView texCoordsBufferView = new BufferView()
+                {
+                    Buffer = texCoordsBufferIdx,	
+                    ByteOffset = 0,	
+                    ByteLength = texCoordsBuffer.ByteLength,	
+                    Target = BufferView.TargetEnum.ARRAY_BUFFER,
+                };
+
+                int texCoordsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(texCoordsBufferView);
 
                 // Create accessors	
-                var vtxAccessor = new AccessorVec3()	
+                Accessor vtxAccessor = new Accessor()	
                 {	
-                    bufferView = vtxBufferViewIdx,	
-                    count = vtxBuffer.PrimitiveCount,	
-                    min = new float[] { (float)vtxMin.X, (float)vtxMin.Y, (float)vtxMin.Z },	
-                    max = new float[] { (float)vtxMax.X, (float)vtxMax.Y, (float)vtxMax.Z }	
+                    BufferView = vtxBufferViewIdx,	
+                    Count = rhinoMesh.Vertices.Count,	
+                    Min = new float[] { (float)vtxMin.X, (float)vtxMin.Y, (float)vtxMin.Z },	
+                    Max = new float[] { (float)vtxMax.X, (float)vtxMax.Y, (float)vtxMax.Z },
+                    Type = Accessor.TypeEnum.VEC3,
+                    ComponentType = Accessor.ComponentTypeEnum.FLOAT,
+                    ByteOffset = 0,
+                };
+
+                int vtxAccessorIdx = dummy.Accessors.AddAndReturnIndex(vtxAccessor);
+
+                Accessor idsAccessor = new Accessor()	
+                {
+                    BufferView = idsBufferViewIdx,
+                    Count = indicesCount,
+                    Min = new float[] { 0 },	
+                    Max = new float[] { rhinoMesh.Vertices.Count - 1 },	
+                    Type = Accessor.TypeEnum.SCALAR,
+                    ComponentType = Accessor.ComponentTypeEnum.UNSIGNED_INT,
+                    ByteOffset = 0,
                 };	
 
-                accessors.Add(vtxAccessor);	
-                int vtxAccessorIdx = accessors.Count - 1;	
+                int idsAccessorIdx = dummy.Accessors.AddAndReturnIndex(idsAccessor);
 
-                var idsAccessor = new AccessorScalar()	
+                Accessor normalsAccessor = new Accessor()
+                {
+                    BufferView = normalsBufferViewIdx,
+                    Count = rhinoMesh.Normals.Count,
+                    Min = new float[] { normalsMin.X, normalsMin.Y, normalsMin.Z },
+                    Max = new float[] { normalsMax.X, normalsMax.Y, normalsMax.Z },
+                    Type = Accessor.TypeEnum.VEC3,
+                    ComponentType = Accessor.ComponentTypeEnum.FLOAT,
+                    ByteOffset = 0,
+                };
+
+                int normalsAccessorIdx = dummy.Accessors.AddAndReturnIndex(normalsAccessor);
+
+                Accessor texCoordsAccessor = new Accessor()	
                 {	
-                    min = new int[] { 0 },	
-                    max = new int[] { rhinoMesh.Vertices.Count - 1 },	
-                    bufferView = idsBufferViewIdx,	
-                    count = idsBuffer.PrimitiveCount	
-                };	
-                accessors.Add(idsAccessor);	
-                int idsAccessorIdx = accessors.Count - 1;	
+                    BufferView = texCoordsBufferViewIdx,	
+                    Count = rhinoMesh.TextureCoordinates.Count,
+                    Min = new float[] { texCoordsMin.X, texCoordsMin.Y },	
+                    Max = new float[] { texCoordsMax.X, texCoordsMax.Y },
+                    Type = Accessor.TypeEnum.VEC2,
+                    ComponentType = Accessor.ComponentTypeEnum.FLOAT,
+                    ByteOffset = 0,
+                };
 
-                AccessorVec3 normalsAccessor = new AccessorVec3()	
-                {	
-                    bufferView = normalsBufferViewIdx,	
-                    count = rhinoMesh.Normals.Count,	
-                    min = new float[] { (float)normalsMin.X, (float)normalsMin.Y, (float)normalsMin.Z },	
-                    max = new float[] { (float)normalsMax.X, (float)normalsMax.Y, (float)normalsMax.Z }	
-                };	
-                int normalsAccessorIdx = accessors.AddAndReturnIndex(normalsAccessor);	
+                int texCoordsAccessorIdx = dummy.Accessors.AddAndReturnIndex(texCoordsAccessor);	
 
-                AccessorVec2 texCoordsAccessor = new AccessorVec2()	
-                {	
-                    bufferView = texCoordsBufferViewIdx,	
-                    count = rhinoMesh.TextureCoordinates.Count,	
-                    min = new float[] { (float)texCoordsMin.X, (float)texCoordsMin.Y },	
-                    max = new float[] { (float)texCoordsMax.X, (float)texCoordsMax.Y }	
-                };	
-                int texCoordsAccessorIdx = accessors.AddAndReturnIndex(texCoordsAccessor);	
-
-                // Create primitives	
-                var attribute = new glTFLoader.Schema.A()	
-                {	
-                    POSITION = vtxAccessorIdx,	
-                    NORMAL = normalsAccessorIdx,	
-                    TEXCOORD_0 = texCoordsAccessorIdx	
-                };	
-
-                var primitive = new MeshPrimitive() { attributes = attribute, indices = idsAccessorIdx, material = currentMaterialIdx };	
+                var primitive = new MeshPrimitive()
+                {
+                    Attributes = new Dictionary<string, int>()
+                    {
+                        { glTF.GLConstants.PositionAttributeTag, vtxAccessorIdx },
+                        { glTF.GLConstants.NormalAttributeTag, normalsAccessorIdx },
+                        { glTF.GLConstants.TexCoord0AttributeTag, texCoordsAccessorIdx },
+                    },
+                    Indices = idsAccessorIdx
+                };
 
                 // Create mesh	
                 primitives.Add(primitive);	
             }	
 
-            var mesh = new glTFLoader.Schema.Mesh() { Primitives = primitives.ToArray() };	
+            var mesh = new glTFLoader.Schema.Mesh()
+            {
+                Primitives = primitives.ToArray()
+            };	
             int idxMesh = dummy.Meshes.AddAndReturnIndex(mesh);	
 
             var node = new Node()
             {
                 Mesh = idxMesh,
+                Name = string.IsNullOrEmpty(rhinoObject.Name) ? null : rhinoObject.Name,
             };
 
             int idxNode = dummy.Nodes.AddAndReturnIndex(node);	
@@ -234,22 +209,141 @@ namespace glTF_BinExporter
             dummy.Scenes[dummy.Scene].Nodes.Add(idxNode);	
         }
 
-        glTFLoader.Schema.Buffer CreateVerticesBuffer(Rhino.Geometry.Collections.MeshVertexList vertices)
+        glTFLoader.Schema.Buffer CreateVerticesBuffer(Rhino.Geometry.Collections.MeshVertexList vertices, out Point3d min, out Point3d max)
         {
-            List<float> floats = new List<float>();
+            var vtxMin = new Point3d() { X = Double.PositiveInfinity, Y = Double.PositiveInfinity, Z = Double.PositiveInfinity };
+            var vtxMax = new Point3d() { X = Double.NegativeInfinity, Y = Double.NegativeInfinity, Z = Double.NegativeInfinity };
 
-            foreach(Point3d vector in vertices)
+            //Preallocate to reduce time spent on allocations
+            List<float> floats = new List<float>(vertices.Count * 3);
+
+            foreach(Point3d vertex in vertices)
             {
-                floats.AddRange(new float[] {(float)vector.X, (float)vector.Z, (float)-vector.Y });
+                floats.AddRange(new float[] {(float)vertex.X, (float)vertex.Z, (float)-vertex.Y });
+
+                vtxMin.X = Math.Min(vtxMin.X, vertex.X);
+                // Switch Y<=>Z for GL coords	
+                vtxMin.Y = Math.Min(vtxMin.Y, vertex.Z);
+                vtxMin.Z = Math.Min(vtxMin.Z, -vertex.Y);
+
+                vtxMax.X = Math.Max(vtxMax.X, vertex.X);
+                // Switch Y<=>Z for GL coords	
+                vtxMax.Y = Math.Max(vtxMax.Y, vertex.Z);
+                vtxMax.Z = Math.Max(vtxMax.Z, -vertex.Y);
             }
 
             IEnumerable<byte> bytesEnumerable = floats.SelectMany(value => BitConverter.GetBytes(value));
 
             byte[] bytes = bytesEnumerable.ToArray();
 
+            min = vtxMin;
+            max = vtxMax;
+
             return new glTFLoader.Schema.Buffer()
             {
-                Uri = Convert.ToBase64String(bytes),
+                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
+                ByteLength = bytes.Length,
+            };
+        }
+
+        glTFLoader.Schema.Buffer CreateIndicesBuffer(Rhino.Geometry.Collections.MeshFaceList faces, out int indicesCount)
+        {
+            //Preallocate to reduce time spent on allocations
+            List<uint> faceIndices = new List<uint>(faces.Count * 3);
+
+            foreach(Rhino.Geometry.MeshFace face in faces)
+            {
+                if(face.IsTriangle)
+                {
+                    faceIndices.AddRange(new uint[] { (uint)face.A, (uint)face.B, (uint)face.C });
+                }
+                else
+                {
+                    //Triangulate
+                    faceIndices.AddRange(new uint[] { (uint)face.A, (uint)face.B, (uint)face.C, (uint)face.A, (uint)face.C, (uint)face.D });
+                }
+            }
+
+            IEnumerable<byte> bytesEnumerable = faceIndices.SelectMany(value => BitConverter.GetBytes(value));
+
+            byte[] bytes = bytesEnumerable.ToArray();
+
+            indicesCount = faceIndices.Count;
+
+            return new glTFLoader.Schema.Buffer()
+            {
+                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
+                ByteLength = bytes.Length,
+            };
+        }
+
+        glTFLoader.Schema.Buffer CreateMeshNormalsBuffer(Rhino.Geometry.Collections.MeshVertexNormalList normals, out Vector3f min, out Vector3f max)
+        {
+            Vector3f vMin = new Vector3f() { X = float.PositiveInfinity, Y = float.PositiveInfinity, Z = float.PositiveInfinity };
+            Vector3f vMax = new Vector3f() { X = float.NegativeInfinity, Y = float.NegativeInfinity, Z = float.NegativeInfinity };
+
+            //Preallocate to reduce time spent on allocations
+            List<float> floats = new List<float>(normals.Count * 3);
+
+            foreach (Vector3f normal in normals)
+            {
+                floats.AddRange(new float[] { normal.X, normal.Z, -normal.Y });
+
+                vMin.X = Math.Min(vMin.X, normal.X);
+                // Switch Y<=>Z for GL coords	
+                vMin.Y = Math.Min(vMin.Y, normal.Z);
+                vMin.Z = Math.Min(vMin.Z, -normal.Y);
+
+                vMax.X = Math.Max(vMax.X, normal.X);
+                // Switch Y<=>Z for GL coords	
+                vMax.Y = Math.Max(vMax.Y, normal.Z);
+                vMax.Z = Math.Max(vMax.Z, -normal.Y);
+            }
+
+            IEnumerable<byte> bytesEnumerable = floats.SelectMany(value => BitConverter.GetBytes(value));
+
+            byte[] bytes = bytesEnumerable.ToArray();
+
+            min = vMin;
+            max = vMax;
+
+            return new glTFLoader.Schema.Buffer()
+            {
+                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
+                ByteLength = bytes.Length,
+            };
+        }
+
+        glTFLoader.Schema.Buffer CreateTextureCoordinates(Rhino.Geometry.Collections.MeshTextureCoordinateList texCoords, out Point2f min, out Point2f max)
+        {
+            Point2f texCoordsMin = new Point2f() { X = float.PositiveInfinity, Y = float.PositiveInfinity };
+            Point2f texCoordsMax = new Point2f() { X = float.NegativeInfinity, Y = float.NegativeInfinity };
+
+            List<float> coordinates = new List<float>(texCoords.Count * 2);
+
+            foreach (Point2f coordinate in texCoords)
+            {
+                coordinates.AddRange(new float[]{ coordinate.X, -coordinate.Y });
+
+                texCoordsMin.X = Math.Min(texCoordsMin.X, coordinate.X);
+                // Switch Y<=>Z for GL coords	
+                texCoordsMin.Y = Math.Min(texCoordsMin.Y, -coordinate.Y);
+
+                texCoordsMax.X = Math.Max(texCoordsMax.X, coordinate.X);
+                // Switch Y<=>Z for GL coords	
+                texCoordsMax.Y = Math.Max(texCoordsMax.Y, -coordinate.Y);
+            }
+
+            IEnumerable<byte> bytesEnumerable = coordinates.SelectMany(value => BitConverter.GetBytes(value));
+
+            byte[] bytes = bytesEnumerable.ToArray();
+
+            min = texCoordsMin;
+            max = texCoordsMax;
+
+            return new glTFLoader.Schema.Buffer()
+            {
+                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
                 ByteLength = bytes.Length,
             };
         }

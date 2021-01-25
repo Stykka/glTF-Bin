@@ -52,5 +52,10 @@ namespace glTF_BinExporter.glTF
         public const int LINEAR_MIPMAP_LINEAR = 9987;
 
         public const int TEXTURE_REPEAT = 0x2901;
+
+        public const string TextBufferHeader = "data:application/octet-stream;base64,";
+        public const string PositionAttributeTag = "POSITION";
+        public const string NormalAttributeTag = "NORMAL";
+        public const string TexCoord0AttributeTag = "TEXCOORD_0";
     }
 }

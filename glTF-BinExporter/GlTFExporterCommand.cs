@@ -90,25 +90,17 @@ namespace glTF_BinExporter.glTF
         {
             try
             {
-                // Writes the result to a memory stream, then dumps it to a file.
-                using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite))
-                using (MemoryStream memoryStream = new MemoryStream(1024))
+                RhinoDocGltfConverter converter = new RhinoDocGltfConverter(opts, rhinoObjects);
+                glTFLoader.Schema.Gltf gltf = converter.ConvertToGltf();
+
+                if(opts.UseBinary)
                 {
-
-                    if (opts.UseBinary)
-                    {
-                        GlTFUtils.ExportBinary(memoryStream, rhinoObjects, opts);
-                    }
-                    else
-                    {
-                        GlTFUtils.ExportText(memoryStream, rhinoObjects, opts);
-                    }
-
-                    memoryStream.Flush();
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-                    memoryStream.CopyTo(fileStream);
-                    fileStream.Flush();
-                    fileStream.Close();
+                    //TODO
+                    RhinoApp.WriteLine("Not implemented yet");
+                }
+                else
+                {
+                    glTFLoader.Interface.SaveModel(gltf, fileName);
                 }
 
                 RhinoApp.WriteLine("Successfully exported selected geometry to glTF(Binary).");
