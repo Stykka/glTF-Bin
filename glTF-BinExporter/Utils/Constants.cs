@@ -12,5 +12,13 @@ namespace glTF_BinExporter.glTF
             ObjectType.Surface,
             ObjectType.SubD
         };
+
+        public static byte[][] Paddings = new byte[][]
+        {
+            new byte[] { },
+            new byte[] { 0, 0, 0 },
+            new byte[] { 0, 0 },
+            new byte[] { 0 },
+        };
     }
 }
