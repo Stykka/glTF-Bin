@@ -95,8 +95,8 @@ namespace glTF_BinExporter.glTF
 
                 if(opts.UseBinary)
                 {
-                    //TODO
-                    RhinoApp.WriteLine("Not implemented yet");
+                    byte[] bytes = converter.GetBinaryBuffer();
+                    glTFLoader.Interface.SaveBinaryModel(gltf, bytes, fileName);
                 }
                 else
                 {
