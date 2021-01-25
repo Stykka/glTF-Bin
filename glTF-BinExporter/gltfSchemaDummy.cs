@@ -10,7 +10,7 @@ namespace glTF_BinExporter
     /// Helper class to convert to the serializeable class.
     /// Primarily just makes things lists so appending is easier.
     /// </summary>
-    public class gltfSchemaDummy
+    class gltfSchemaDummy
     {
         public List<string> ExtensionsUsed = new List<string>();
 
@@ -40,7 +40,7 @@ namespace glTF_BinExporter
 
         public int Scene = 0;
 
-        public List<Scene> Scenes = new List<Scene>();
+        public List<gltfSchemaSceneDummy> Scenes = new List<gltfSchemaSceneDummy>();
 
         public List<Skin> Skins = new List<Skin>();
 
@@ -50,7 +50,7 @@ namespace glTF_BinExporter
 
         public Extras Extras = null;
 
-        Gltf ToSchemaGltf()
+        public Gltf ToSchemaGltf()
         {
             Gltf gltf = new Gltf();
 
@@ -72,13 +72,26 @@ namespace glTF_BinExporter
 
             gltf.Scene = this.Scene;
 
-            gltf.Scenes = this.Scenes.Count == 0 ? null : this.Scenes.ToArray();
+            gltf.Scenes = this.Scenes.Count == 0 ? null : ConvertScenes();
+
             gltf.Skins = this.Skins.Count == 0 ? null : this.Skins.ToArray();
             gltf.Textures = this.Textures.Count == 0 ? null : this.Textures.ToArray();
             gltf.Extensions = this.Extensions;
             gltf.Extras = this.Extras;
 
             return gltf;
+        }
+
+        private Scene[] ConvertScenes()
+        {
+            List<Scene> scenes =  new List<Scene>();
+
+            foreach(gltfSchemaSceneDummy dummy in Scenes)
+            {
+                scenes.Add(dummy.ToSchemaGltf());
+            }
+
+            return scenes.ToArray();
         }
 
     }
