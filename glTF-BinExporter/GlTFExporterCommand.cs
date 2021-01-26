@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace glTF_BinExporter.glTF
+namespace glTF_BinExporter
 {
 
     [System.Runtime.InteropServices.Guid("82936404-bd41-46f4-8fe7-e594c2a7e8af")]

@@ -27,7 +27,7 @@ namespace glTF_BinExporter
             this.options = options;
 
             useDracoCompressionCheck.Text = "Use Draco Compression";
-
+            
             dracoCompressionLabel.Text = "Draco Compression Level";
             dracoCompressionLevelInput.DecimalPlaces = 0;
             dracoCompressionLevelInput.MinValue = 1;

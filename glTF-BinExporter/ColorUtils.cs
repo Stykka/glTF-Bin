@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using Rhino.Display;
 
-namespace glTF_BinExporter.glTF
+namespace glTF_BinExporter
 {
     public static class ColorUtils
     {

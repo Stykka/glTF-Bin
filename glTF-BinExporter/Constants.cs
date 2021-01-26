@@ -1,6 +1,6 @@
 ﻿using Rhino.DocObjects;
 
-namespace glTF_BinExporter.glTF
+namespace glTF_BinExporter
 {
     public static class Constants
     {
@@ -20,5 +20,10 @@ namespace glTF_BinExporter.glTF
             new byte[] { 0, 0 },
             new byte[] { 0 },
         };
+
+        public const string TextBufferHeader = "data:application/octet-stream;base64,";
+        public const string PositionAttributeTag = "POSITION";
+        public const string NormalAttributeTag = "NORMAL";
+        public const string TexCoord0AttributeTag = "TEXCOORD_0";
     }
 }

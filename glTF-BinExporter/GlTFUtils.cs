@@ -76,7 +76,7 @@ namespace glTF_BinExporter
 
                 // This is always true when called from the Main plugin command, as it uses the same ObjectType array as filter.
                 // Keeping it around in case someone calls this from somewhere else.
-                var isValidGeometry = glTF.Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
+                var isValidGeometry = Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
 
                 if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
                 {

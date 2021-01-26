@@ -226,9 +226,9 @@ namespace glTF_BinExporter
                 {
                     Attributes = new Dictionary<string, int>()
                     {
-                        { glTF.GLConstants.PositionAttributeTag, vtxAccessorIdx },
-                        { glTF.GLConstants.NormalAttributeTag, normalsAccessorIdx },
-                        { glTF.GLConstants.TexCoord0AttributeTag, texCoordsAccessorIdx },
+                        { Constants.PositionAttributeTag, vtxAccessorIdx },
+                        { Constants.NormalAttributeTag, normalsAccessorIdx },
+                        { Constants.TexCoord0AttributeTag, texCoordsAccessorIdx },
                     },
                     Indices = idsAccessorIdx,
                     Material = materialIndex,
@@ -385,9 +385,9 @@ namespace glTF_BinExporter
                 {
                     Attributes = new Dictionary<string, int>()
                     {
-                        { glTF.GLConstants.PositionAttributeTag, vtxAccessorIdx },
-                        { glTF.GLConstants.NormalAttributeTag, normalsAccessorIdx },
-                        { glTF.GLConstants.TexCoord0AttributeTag, texCoordsAccessorIdx },
+                        { Constants.PositionAttributeTag, vtxAccessorIdx },
+                        { Constants.NormalAttributeTag, normalsAccessorIdx },
+                        { Constants.TexCoord0AttributeTag, texCoordsAccessorIdx },
                     },
                     Indices = idsAccessorIdx,
                     Material = materialIndex,
@@ -420,7 +420,7 @@ namespace glTF_BinExporter
 
             return new glTFLoader.Schema.Buffer()
             {
-                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
+                Uri = Constants.TextBufferHeader + Convert.ToBase64String(bytes),
                 ByteLength = bytes.Length,
             };
         }
@@ -462,7 +462,7 @@ namespace glTF_BinExporter
 
             return new glTFLoader.Schema.Buffer()
             {
-                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
+                Uri = Constants.TextBufferHeader + Convert.ToBase64String(bytes),
                 ByteLength = bytes.Length,
             };
         }
@@ -498,7 +498,7 @@ namespace glTF_BinExporter
 
             return new glTFLoader.Schema.Buffer()
             {
-                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
+                Uri = Constants.TextBufferHeader + Convert.ToBase64String(bytes),
                 ByteLength = bytes.Length,
             };
         }
@@ -540,7 +540,7 @@ namespace glTF_BinExporter
 
             return new glTFLoader.Schema.Buffer()
             {
-                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(bytes),
+                Uri = Constants.TextBufferHeader + Convert.ToBase64String(bytes),
                 ByteLength = bytes.Length,
             };
         }
@@ -671,7 +671,7 @@ namespace glTF_BinExporter
 
             var textureBuffer = new glTFLoader.Schema.Buffer()
             {
-                Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(imageBytes),
+                Uri = Constants.TextBufferHeader + Convert.ToBase64String(imageBytes),
                 ByteLength = imageBytes.Length,
             };
 
@@ -884,7 +884,7 @@ namespace glTF_BinExporter
 
             var textureBuffer = new glTFLoader.Schema.Buffer();
 
-            textureBuffer.Uri = glTF.GLConstants.TextBufferHeader + Convert.ToBase64String(imageBytes);
+            textureBuffer.Uri = Constants.TextBufferHeader + Convert.ToBase64String(imageBytes);
             textureBuffer.ByteLength = imageBytes.Length;
 
             int textureBufferIdx = dummy.Buffers.AddAndReturnIndex(textureBuffer);
@@ -935,7 +935,7 @@ namespace glTF_BinExporter
 
                 //Zero pad so its 4 byte aligned
                 long mod = imageStream.Position % 4;
-                imageStream.Write(glTF.Constants.Paddings[mod], 0, glTF.Constants.Paddings[mod].Length);
+                imageStream.Write(Constants.Paddings[mod], 0, Constants.Paddings[mod].Length);
 
                 return imageStream.ToArray();
             }
