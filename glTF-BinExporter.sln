@@ -15,6 +15,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GeneratorUnitTests", "glTFLib\glTF-CSharp-Loader\GeneratorUnitTests\GeneratorUnitTests.csproj", "{431A50BA-F27A-4685-9061-FFA171106F32}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "glTFLoader", "glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj", "{4C88FA85-98F7-4E37-978C-1885D175B428}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5F1EB9C4-C06D-438C-8F71-B455DDF85456} = {5F1EB9C4-C06D-438C-8F71-B455DDF85456}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "glTFLoaderUnitTests", "glTFLib\glTF-CSharp-Loader\glTFLoaderUnitTests\glTFLoaderUnitTests.csproj", "{41F1BEA4-2895-4982-9AB7-A863C61C2075}"
 EndProject
