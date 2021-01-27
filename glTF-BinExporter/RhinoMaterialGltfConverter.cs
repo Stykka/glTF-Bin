@@ -31,7 +31,10 @@ namespace glTF_BinExporter
         public int AddMaterial()
         {
             // Prep
-            glTFLoader.Schema.Material material = new glTFLoader.Schema.Material();
+            glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
+            {
+                Name = rhinoMaterial.Name,
+            };
 
             // Textures
             Rhino.DocObjects.Texture baseColorTexture = null;
