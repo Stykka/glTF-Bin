@@ -25,5 +25,32 @@ namespace glTF_BinExporter
         public const string PositionAttributeTag = "POSITION";
         public const string NormalAttributeTag = "NORMAL";
         public const string TexCoord0AttributeTag = "TEXCOORD_0";
+
+        public const string DracoMeshCompressionExtensionTag = "KHR_draco_mesh_compression";
+    }
+
+    public class DracoGeometryInfo
+    {
+        public bool success;
+
+        public int bufferIndex;
+        public int byteOffset;
+        public int byteLength;
+
+        public int verticesNum;
+        public float[] verticesMin;
+        public float[] verticesMax;
+
+        public int trianglesNum;
+        public float trianglesMin;
+        public float trianglesMax;
+
+        public int normalsNum;
+        public float[] normalsMin;
+        public float[] normalsMax;
+
+        public int texCoordsNum;
+        public float[] texCoordsMin;
+        public float[] texCoordsMax;
     }
 }
