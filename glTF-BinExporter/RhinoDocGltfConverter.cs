@@ -36,7 +36,7 @@ namespace glTF_BinExporter
 
         private gltfSchemaDummy dummy = new gltfSchemaDummy();
 
-        private MemoryStream binaryBufferStream = new MemoryStream();
+        private List<byte> binaryBuffer = new List<byte>();
 
         public Gltf ConvertToGltf()
         {
@@ -88,7 +88,7 @@ namespace glTF_BinExporter
                 //have to add the empty buffer for the binary file header
                 dummy.Buffers.Add(new glTFLoader.Schema.Buffer()
                 {
-                    ByteLength = (int)binaryBufferStream.Length,
+                    ByteLength = (int)binaryBuffer.Count,
                     Uri = null,
                 });
             }
@@ -98,7 +98,7 @@ namespace glTF_BinExporter
 
         public byte[] GetBinaryBuffer()
         {
-            return binaryBufferStream.ToArray();
+            return binaryBuffer.ToArray();
         }
 
         private void AddRhinoObjectDraco(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid materialId, RhinoObject rhinoObject)
@@ -323,8 +323,8 @@ namespace glTF_BinExporter
         {
             if(options.UseBinary)
             {
-                byteOffset = (int)binaryBufferStream.Position;
-                binaryBufferStream.Write(bytes, 0, bytes.Length);
+                byteOffset = (int)binaryBuffer.Count;
+                binaryBuffer.AddRange(bytes);
                 bufferIndex = 0;
             }
             else
@@ -354,31 +354,31 @@ namespace glTF_BinExporter
 
                 byte[] verticesBytes = GetVerticesBytes(rhinoMesh.Vertices, out vtxMin, out vtxMax);
                 int verticesByteLength = verticesBytes.Length;
-                int verticesOffset = (int)binaryBufferStream.Position;
-                binaryBufferStream.Write(verticesBytes, 0, verticesByteLength);
+                int verticesOffset = (int)binaryBuffer.Count;
+                binaryBuffer.AddRange(verticesBytes);
 
                 int indicesCount = 0;
 
                 byte[] indicesBytes = GetIndicesBytes(rhinoMesh.Faces, out indicesCount);
                 int indicesBytesLength = indicesBytes.Length;
-                int indicesOffset = (int)binaryBufferStream.Position;
-                binaryBufferStream.Write(indicesBytes, 0, indicesBytesLength);
+                int indicesOffset = (int)binaryBuffer.Count;
+                binaryBuffer.AddRange(indicesBytes);
 
                 Vector3f normalsMin = Vector3f.Zero;
                 Vector3f normalsMax = Vector3f.Zero;
 
                 byte[] normalsBytes = GetNormalsBytes(rhinoMesh.Normals, out normalsMin, out normalsMax);
                 int normalsBytesLength = normalsBytes.Length;
-                int normalsOffset = (int)binaryBufferStream.Position;
-                binaryBufferStream.Write(normalsBytes, 0, normalsBytesLength);
+                int normalsOffset = (int)binaryBuffer.Count;
+                binaryBuffer.AddRange(normalsBytes);
 
                 Point2f texCoordsMin = new Point2f(0.0f, 0.0f);
                 Point2f texCoordsMax = new Point2f(0.0f, 0.0f);
 
                 byte[] texCoordsBytes = GetTextureCoordinatesBytes(rhinoMesh.TextureCoordinates, out texCoordsMin, out texCoordsMax);
                 int texCoordsBytesLength = texCoordsBytes.Length;
-                int texCoordsOffset = (int)binaryBufferStream.Position;
-                binaryBufferStream.Write(texCoordsBytes, 0, texCoordsBytesLength);
+                int texCoordsOffset = (int)binaryBuffer.Count;
+                binaryBuffer.AddRange(texCoordsBytes);
 
                 var vtxBufferView = new BufferView()
                 {
@@ -828,7 +828,7 @@ namespace glTF_BinExporter
         {
             if(!materialsMap.TryGetValue(materialId, out int materialIndex))
             {
-                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, dummy, binaryBufferStream, material);
+                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, dummy, binaryBuffer, material);
                 materialIndex = materialConverter.AddMaterial();
                 materialsMap.Add(materialId, materialIndex);
             }

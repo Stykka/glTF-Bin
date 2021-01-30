@@ -14,17 +14,17 @@ namespace glTF_BinExporter
 {
     class RhinoMaterialGltfConverter
     {
-        public RhinoMaterialGltfConverter(glTFExportOptions options, gltfSchemaDummy dummy, MemoryStream binaryBufferStream, Rhino.DocObjects.Material rhinoMaterial)
+        public RhinoMaterialGltfConverter(glTFExportOptions options, gltfSchemaDummy dummy, List<byte> binaryBuffer, Rhino.DocObjects.Material rhinoMaterial)
         {
             this.options = options;
             this.dummy = dummy;
-            this.binaryBufferStream = binaryBufferStream;
+            this.binaryBuffer = binaryBuffer;
             this.rhinoMaterial = rhinoMaterial;
         }
 
         private glTFExportOptions options = null;
         private gltfSchemaDummy dummy = null;
-        private MemoryStream binaryBufferStream = null;
+        private List<byte> binaryBuffer = null;
 
         private Rhino.DocObjects.Material rhinoMaterial = null;
 
@@ -153,8 +153,8 @@ namespace glTF_BinExporter
         private glTFLoader.Schema.Image GetImageFromFileBinary(string fileName)
         {
             byte[] imageBytes = GetImageBytesFromFile(fileName);
-            int imageBytesOffset = (int)binaryBufferStream.Position;
-            binaryBufferStream.Write(imageBytes, 0, imageBytes.Length);
+            int imageBytesOffset = (int)binaryBuffer.Count;
+            binaryBuffer.AddRange(imageBytes);
 
             var textureBufferView = new glTFLoader.Schema.BufferView()
             {
@@ -354,8 +354,8 @@ namespace glTF_BinExporter
         private glTFLoader.Schema.Image GetImageFromBitmapBinary(Bitmap bitmap)
         {
             byte[] imageBytes = GetImageBytes(bitmap);
-            int imageBytesOffset = (int)binaryBufferStream.Position;
-            binaryBufferStream.Write(imageBytes, 0, imageBytes.Length);
+            int imageBytesOffset = (int)binaryBuffer.Count;
+            binaryBuffer.AddRange(imageBytes);
 
             // Create bufferviews
             var textureBufferView = new BufferView()
