@@ -826,8 +826,7 @@ namespace glTF_BinExporter
 
         int GetMaterial(Rhino.DocObjects.Material material, Guid materialId)
         {
-            int materialIndex = -1;
-            if(!materialsMap.TryGetValue(materialId, out materialIndex))
+            if(!materialsMap.TryGetValue(materialId, out int materialIndex))
             {
                 RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, dummy, binaryBufferStream, material);
                 materialIndex = materialConverter.AddMaterial();
