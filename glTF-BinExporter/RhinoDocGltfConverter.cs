@@ -349,33 +349,22 @@ namespace glTF_BinExporter
             {
                 rhinoMesh.Faces.ConvertQuadsToTriangles();
 
-                Point3d vtxMin = Point3d.Origin;
-                Point3d vtxMax = Point3d.Origin;
-
-                byte[] verticesBytes = GetVerticesBytes(rhinoMesh.Vertices, out vtxMin, out vtxMax);
+                byte[] verticesBytes = GetVerticesBytes(rhinoMesh.Vertices, out Point3d vtxMin, out Point3d vtxMax);
                 int verticesByteLength = verticesBytes.Length;
                 int verticesOffset = (int)binaryBuffer.Count;
                 binaryBuffer.AddRange(verticesBytes);
 
-                int indicesCount = 0;
-
-                byte[] indicesBytes = GetIndicesBytes(rhinoMesh.Faces, out indicesCount);
+                byte[] indicesBytes = GetIndicesBytes(rhinoMesh.Faces, out int indicesCount);
                 int indicesBytesLength = indicesBytes.Length;
                 int indicesOffset = (int)binaryBuffer.Count;
                 binaryBuffer.AddRange(indicesBytes);
 
-                Vector3f normalsMin = Vector3f.Zero;
-                Vector3f normalsMax = Vector3f.Zero;
-
-                byte[] normalsBytes = GetNormalsBytes(rhinoMesh.Normals, out normalsMin, out normalsMax);
+                byte[] normalsBytes = GetNormalsBytes(rhinoMesh.Normals, out Vector3f normalsMin, out Vector3f normalsMax);
                 int normalsBytesLength = normalsBytes.Length;
                 int normalsOffset = (int)binaryBuffer.Count;
                 binaryBuffer.AddRange(normalsBytes);
 
-                Point2f texCoordsMin = new Point2f(0.0f, 0.0f);
-                Point2f texCoordsMax = new Point2f(0.0f, 0.0f);
-
-                byte[] texCoordsBytes = GetTextureCoordinatesBytes(rhinoMesh.TextureCoordinates, out texCoordsMin, out texCoordsMax);
+                byte[] texCoordsBytes = GetTextureCoordinatesBytes(rhinoMesh.TextureCoordinates, out Point2f texCoordsMin, out Point2f texCoordsMax);
                 int texCoordsBytesLength = texCoordsBytes.Length;
                 int texCoordsOffset = (int)binaryBuffer.Count;
                 binaryBuffer.AddRange(texCoordsBytes);
@@ -516,27 +505,16 @@ namespace glTF_BinExporter
             {
                 rhinoMesh.Faces.ConvertQuadsToTriangles();
 
-                Point3d vtxMin = Point3d.Origin;
-                Point3d vtxMax = Point3d.Origin;
-
-                var vtxBuffer = CreateVerticesBuffer(rhinoMesh.Vertices, out vtxMin, out vtxMax);
+                var vtxBuffer = CreateVerticesBuffer(rhinoMesh.Vertices, out Point3d vtxMin, out Point3d vtxMax);
                 int vtxBufferIdx = dummy.Buffers.AddAndReturnIndex(vtxBuffer);
 
-                int indicesCount = 0;
-
-                var idsBuffer = CreateIndicesBuffer(rhinoMesh.Faces, out indicesCount);
+                var idsBuffer = CreateIndicesBuffer(rhinoMesh.Faces, out int indicesCount);
                 int idsBufferIdx = dummy.Buffers.AddAndReturnIndex(idsBuffer);
 
-                Vector3f normalsMin = Vector3f.Zero;
-                Vector3f normalsMax = Vector3f.Zero;
-
-                var normalsBuffer = CreateNormalsBuffer(rhinoMesh.Normals, out normalsMin, out normalsMax);	
+                var normalsBuffer = CreateNormalsBuffer(rhinoMesh.Normals, out Vector3f normalsMin, out Vector3f normalsMax);	
                 int normalsBufferIdx = dummy.Buffers.AddAndReturnIndex(normalsBuffer);
 
-                Point2f texCoordsMin = new Point2f(0.0f, 0.0f);
-                Point2f texCoordsMax = new Point2f(0.0f, 0.0f);
-
-                var texCoordsBuffer = CreateTextureCoordinatesBuffer(rhinoMesh.TextureCoordinates, out texCoordsMin, out texCoordsMax);
+                var texCoordsBuffer = CreateTextureCoordinatesBuffer(rhinoMesh.TextureCoordinates, out Point2f texCoordsMin, out Point2f texCoordsMax);
                 int texCoordsBufferIdx = dummy.Buffers.AddAndReturnIndex(texCoordsBuffer);	
 	
                 var vtxBufferView = new BufferView()
