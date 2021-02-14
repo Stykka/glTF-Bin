@@ -147,9 +147,9 @@ namespace glTF_BinExporter
                         IncludeNormals = true,
                         IncludeTextureCoordinates = true,
                         IncludeVertexColors = false,
-                        PositionQuantizationBits = options.DracoQuantizationBits,
-                        NormalQuantizationBits = options.DracoQuantizationBits,
-                        TextureCoordintateQuantizationBits = options.DracoQuantizationBits
+                        PositionQuantizationBits = options.DracoQuantizationBitsPosition,
+                        NormalQuantizationBits = options.DracoQuantizationBitsNormal,
+                        TextureCoordintateQuantizationBits = options.DracoQuantizationBitsTexture
                     }
                 );
 
