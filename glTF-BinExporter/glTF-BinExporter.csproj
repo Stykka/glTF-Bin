@@ -7,9 +7,9 @@
     <Title>glTF_BinExporter</Title>
     <Description>Description of glTF_BinExporter</Description>
     <RhinoMacLauncher>/Applications/Rhino 7.app</RhinoMacLauncher>
-    <ReleaseVersion>1.5.0.0</ReleaseVersion>
-    <PackageVersion>1.1.0.0</PackageVersion>
-    <Authors>Aske Doerge</Authors>
+    <ReleaseVersion>1.6.0.0</ReleaseVersion>
+    <PackageVersion>1.6.0.0</PackageVersion>
+    <Authors>Aske Doerge, Joshua Kennedy</Authors>
     <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
   
@@ -33,4 +33,8 @@
   <ItemGroup>
     <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
 </Project>

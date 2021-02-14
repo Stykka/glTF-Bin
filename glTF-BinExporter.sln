@@ -4,8 +4,6 @@ VisualStudioVersion = 16.0.30611.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "glTF-BinExporter", "glTF-BinExporter\glTF-BinExporter.csproj", "{4491BB4A-48C4-4681-9F9E-FEAA285F20CC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "glTF-BinExporterWin", "glTF-BinExporter\glTF-BinExporterWin.csproj", "{7F49BC9A-169E-4C15-95FA-099B5A7EC715}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "glTFLib", "glTFLib", "{276539E0-5857-46E7-9A2B-D8F7C8F5D112}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Generator", "glTFLib\glTF-CSharp-Loader\Generator\Generator.csproj", "{5F1EB9C4-C06D-438C-8F71-B455DDF85456}"
@@ -20,6 +18,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "glTFLoader", "glTFLib\glTF-
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "glTFLoaderUnitTests", "glTFLib\glTF-CSharp-Loader\glTFLoaderUnitTests\glTFLoaderUnitTests.csproj", "{41F1BEA4-2895-4982-9AB7-A863C61C2075}"
+EndProject
+Project("{9344BDBB-3E7F-41FC-A0DD-8665D75EE146}") = "glTF-BinExporterWin", "glTF-BinExporter\glTF-BinExporterWin.csproj", "{393F26E2-298F-4581-9993-C8E8416F53AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,18 +43,6 @@ Global
 		{4491BB4A-48C4-4681-9F9E-FEAA285F20CC}.Release|x64.Build.0 = Release|Any CPU
 		{4491BB4A-48C4-4681-9F9E-FEAA285F20CC}.Release|x86.ActiveCfg = Release|Any CPU
 		{4491BB4A-48C4-4681-9F9E-FEAA285F20CC}.Release|x86.Build.0 = Release|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Debug|x64.Build.0 = Debug|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Debug|x86.Build.0 = Debug|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Release|x64.ActiveCfg = Release|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Release|x64.Build.0 = Release|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Release|x86.ActiveCfg = Release|Any CPU
-		{7F49BC9A-169E-4C15-95FA-099B5A7EC715}.Release|x86.Build.0 = Release|Any CPU
 		{5F1EB9C4-C06D-438C-8F71-B455DDF85456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5F1EB9C4-C06D-438C-8F71-B455DDF85456}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F1EB9C4-C06D-438C-8F71-B455DDF85456}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -115,6 +103,18 @@ Global
 		{41F1BEA4-2895-4982-9AB7-A863C61C2075}.Release|x64.Build.0 = Release|x64
 		{41F1BEA4-2895-4982-9AB7-A863C61C2075}.Release|x86.ActiveCfg = Release|x86
 		{41F1BEA4-2895-4982-9AB7-A863C61C2075}.Release|x86.Build.0 = Release|x86
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Debug|x64.Build.0 = Debug|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Debug|x86.Build.0 = Debug|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Release|x64.ActiveCfg = Release|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Release|x64.Build.0 = Release|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Release|x86.ActiveCfg = Release|Any CPU
+		{393F26E2-298F-4581-9993-C8E8416F53AA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -130,7 +130,7 @@ Global
 		SolutionGuid = {CC6F7860-F467-4BA2-9079-EFDC3EB9F98A}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		version = 0.3
+		version = 1.6.0.0
 		Policies = $0
 		$0.DotNetNamingPolicy = $1
 		$1.DirectoryNamespaceAssociation = PrefixedHierarchical
