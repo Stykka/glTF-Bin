@@ -21,11 +21,16 @@
     <DebugType></DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="glTF\**" />
+    <EmbeddedResource Remove="glTF\**" />
+    <None Remove="glTF\**" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="RhinoCommon" Version="7.2.21012.11001" IncludeAssets="compile;build" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
   
   <ItemGroup>
-    <Folder Include="glTF\Materials\" />
+    <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
   </ItemGroup>
 </Project>

@@ -8,7 +8,7 @@ using Rhino.DocObjects;
 using Rhino.Geometry;
 using Rhino.Render;
 
-namespace glTF_BinExporter.glTF
+namespace glTF_BinExporter
 {
     /// <summary>
     /// Functions for helping with adding RhinoObjects to the RootModel.
@@ -62,8 +62,10 @@ namespace glTF_BinExporter.glTF
         /// </summary>
         /// <param name="rhinoObjects"></param>
         /// <returns></returns>
-        public static List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid>> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects) {
-            var rhinoObjectsRes = new List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid>>();
+        public static List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
+        {
+
+            var rhinoObjectsRes = new List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>>();
 
             foreach (var rhinoObject in rhinoObjects)
             {
@@ -79,7 +81,7 @@ namespace glTF_BinExporter.glTF
                 if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
                 {
                     // None-block. Just add it to the result list
-                    rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid>(GetMeshes(rhinoObject), mat, renderMatId));
+                    rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(GetMeshes(rhinoObject), mat, renderMatId, rhinoObject));
                 } else if (rhinoObject.ObjectType == ObjectType.InstanceReference) {
                     // Cast to InstanceObject/BlockInstance
                     var instanceObject = (InstanceObject)rhinoObject;
@@ -97,7 +99,7 @@ namespace glTF_BinExporter.glTF
                         }
 
                         // Add the exploded, transformed geo to the result list
-                        rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid>(meshes, mat, renderMatId));
+                        rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(meshes, mat, renderMatId, item.rhinoObject));
                     }
                 } else {
                     // TODO: Should give better error message here.
@@ -105,57 +107,6 @@ namespace glTF_BinExporter.glTF
                 }
             }
             return rhinoObjectsRes;
-        }
-
-        public static void ExportText(MemoryStream outStream, IEnumerable<RhinoObject> rhinoObjects, glTFExportOptions exportOptions)
-        {
-            RootModel mdl = new RootModel(exportOptions);
-
-            var sanitizedRhinoObjects = SanitizeRhinoObjects(rhinoObjects);
-
-            foreach (var kv in sanitizedRhinoObjects)
-            {
-                // Regular objects
-                if (exportOptions.UseDracoCompression)
-                {
-                    mdl.AddRhinoObjectDraco(kv.Item1, kv.Item2, kv.Item3);
-                }
-                else
-                {
-                    mdl.AddRhinoObject(kv.Item1, kv.Item2, kv.Item3);
-                }
-                
-                foreach (var mesh in kv.Item1) {
-                    mesh.Dispose();
-		        }
-            }
-
-            var json = mdl.SerializeToJSON();
-            byte[] jsonBytes = Encoding.ASCII.GetBytes(json);
-
-            outStream.Write(jsonBytes, 0, jsonBytes.Length);
-            outStream.Flush();
-        }
-
-        public static void ExportBinary(MemoryStream outStream, IEnumerable<RhinoObject> rhinoObjects, glTFExportOptions exportOptions)
-        {
-            RootModel mdl = new RootModel(exportOptions);
-
-            var sanitizedRhinoObjects = SanitizeRhinoObjects(rhinoObjects);
-
-            foreach (var kv in sanitizedRhinoObjects)
-            {
-                // Regular objects
-                if (exportOptions.UseDracoCompression) {
-                    mdl.AddRhinoObjectDraco(kv.Item1, kv.Item2, kv.Item3);
-                } else {
-                    mdl.AddRhinoObject(kv.Item1, kv.Item2, kv.Item3);
-                }
-            }
-
-            mdl.SerializeToGLB(outStream);
-
-            outStream.Flush();
         }
 
         public static int AddAndReturnIndex<T>(this List<T> list, T item)

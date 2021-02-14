@@ -4,7 +4,7 @@ using Rhino.PlugIns;
 using System.Collections.Generic;
 using System.IO;
 
-namespace glTF_BinExporter.glTF
+namespace glTF_BinExporter
 {
     ///<summary>
     /// <para>Every RhinoCommon .rhp assembly must have one and only one PlugIn-derived

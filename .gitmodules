@@ -1,0 +1,3 @@
+[submodule "glTFLib"]
+	path = glTFLib
+	url = https://github.com/mcneel/glTFLib.git

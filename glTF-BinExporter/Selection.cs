@@ -3,7 +3,7 @@ using Rhino.Geometry;
 using Rhino.Input;
 using Rhino.Input.Custom;
 
-namespace glTF_BinExporter.glTF
+namespace glTF_BinExporter
 {
     public class Selection
     {
