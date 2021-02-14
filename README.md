@@ -22,6 +22,9 @@ $ /Applications/Rhino\ 7.app/Contents/Resources/bin/yak build
 $ /Applications/Rhino\ 7.app/Contents/Resources/bin/yak push gltf-binexporter-XXXXXXX-any.yak
 ```
 
+## OS X Specific Instructions
+This repo uses git submodules. To build them on OS X, make sure they are checked out, and go to `glTF-CSharp-Loader`. Ensure this PR has been merged: https://github.com/KhronosGroup/glTF-CSharp-Loader/pull/33https://github.com/KhronosGroup/glTF-CSharp-Loader/pull/33, then build the project.
+
 # Sponsors
 [Stykka ApS](https://stykka.com)
 [McNeel](https://rhino3d.com)
