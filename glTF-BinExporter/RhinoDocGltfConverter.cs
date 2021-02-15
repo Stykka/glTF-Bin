@@ -58,7 +58,7 @@ namespace glTF_BinExporter
             M30 = 0,
             M31 = 0,
             M32 = 0,
-            M33 = 0,
+            M33 = 1,
         };
 
         public Gltf ConvertToGltf()
