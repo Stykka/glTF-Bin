@@ -68,7 +68,7 @@ namespace glTF_BinExporter
                                 .Select(o => o.Object())
                                 .ToArray();
 
-            if(!DoExport(dialog.FileName, opts, rhinoObjects))
+            if(!DoExport(dialog.FileName, opts, rhinoObjects, doc.RenderSettings.LinearWorkflow))
             {
                 return Result.Failure;
             }
@@ -86,11 +86,11 @@ namespace glTF_BinExporter
             };
         }
 
-        public static bool DoExport(string fileName, glTFExportOptions opts, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects)
+        public static bool DoExport(string fileName, glTFExportOptions opts, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects, Rhino.Render.LinearWorkflow workflow)
         {
             try
             {
-                RhinoDocGltfConverter converter = new RhinoDocGltfConverter(opts, rhinoObjects);
+                RhinoDocGltfConverter converter = new RhinoDocGltfConverter(opts, rhinoObjects, workflow);
                 glTFLoader.Schema.Gltf gltf = converter.ConvertToGltf();
 
                 if(opts.UseBinary)

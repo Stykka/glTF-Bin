@@ -1,6 +1,7 @@
 ﻿using glTFLoader.Schema;
 using Rhino.Display;
 using Rhino.DocObjects;
+using Rhino.Geometry;
 using Rhino.Render;
 using System;
 using System.Collections.Generic;
@@ -14,17 +15,19 @@ namespace glTF_BinExporter
 {
     class RhinoMaterialGltfConverter
     {
-        public RhinoMaterialGltfConverter(glTFExportOptions options, gltfSchemaDummy dummy, List<byte> binaryBuffer, Rhino.DocObjects.Material rhinoMaterial)
+        public RhinoMaterialGltfConverter(glTFExportOptions options, gltfSchemaDummy dummy, List<byte> binaryBuffer, Rhino.DocObjects.Material rhinoMaterial, LinearWorkflow workflow)
         {
             this.options = options;
             this.dummy = dummy;
             this.binaryBuffer = binaryBuffer;
             this.rhinoMaterial = rhinoMaterial;
+            this.workflow = workflow;
         }
 
         private glTFExportOptions options = null;
         private gltfSchemaDummy dummy = null;
         private List<byte> binaryBuffer = null;
+        private LinearWorkflow workflow = null;
 
         private Rhino.DocObjects.Material rhinoMaterial = null;
 
@@ -34,48 +37,34 @@ namespace glTF_BinExporter
             glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
             {
                 Name = rhinoMaterial.Name,
+                PbrMetallicRoughness = new MaterialPbrMetallicRoughness(),
             };
+            
+            if(!rhinoMaterial.IsPhysicallyBased)
+            {
+                rhinoMaterial.ToPhysicallyBased();
+            }
 
             // Textures
-            Rhino.DocObjects.Texture baseColorTexture = null;
-            Rhino.DocObjects.Texture metallicTexture = null;
-            Rhino.DocObjects.Texture roughnessTexture = null;
-            Rhino.DocObjects.Texture normalTexture = null;
-            Rhino.DocObjects.Texture occlusionTexture = null;
-            Rhino.DocObjects.Texture emissiveTexture = null;
+            Rhino.DocObjects.Texture metallicTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Metallic);
+            Rhino.DocObjects.Texture roughnessTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Roughness);
+            Rhino.DocObjects.Texture normalTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.Bump);
+            Rhino.DocObjects.Texture occlusionTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_AmbientOcclusion);
+            Rhino.DocObjects.Texture emissiveTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Emission);
 
-            if (rhinoMaterial.IsPhysicallyBased)
-            {
-                baseColorTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_BaseColor);
-                metallicTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Metallic);
-                roughnessTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Roughness);
-                normalTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.Bump);
-                occlusionTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_AmbientOcclusion);
-                emissiveTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Emission);
-            }
-            else
-            {
-                baseColorTexture = rhinoMaterial.GetTexture(TextureType.PBR_BaseColor);
-                metallicTexture = rhinoMaterial.GetTexture(TextureType.PBR_Metallic);
-                roughnessTexture = rhinoMaterial.GetTexture(TextureType.PBR_Roughness);
-                normalTexture = rhinoMaterial.GetTexture(TextureType.Bump);
-                occlusionTexture = null; // Oldschool shaders don't have this.
-                emissiveTexture = null; // TODO: Don't know where to pull this from. It should be there...
-            }
-
-            if (baseColorTexture != null)
-            {
-                material.PbrMetallicRoughness = new MaterialPbrMetallicRoughness();
-                material.PbrMetallicRoughness.BaseColorTexture = AddTexture(baseColorTexture.FileReference.FullPath);
-            }
+            HandleBaseColor(rhinoMaterial, material);
 
             if (metallicTexture != null || roughnessTexture != null)
             {
-                if (material.PbrMetallicRoughness == null)
-                {
-                    material.PbrMetallicRoughness = new MaterialPbrMetallicRoughness();
-                }
                 material.PbrMetallicRoughness.MetallicRoughnessTexture = AddMetallicRoughnessTexture(rhinoMaterial);
+
+                material.PbrMetallicRoughness.MetallicFactor = 1.0f;
+                material.PbrMetallicRoughness.RoughnessFactor = 1.0f;
+            }
+            else
+            {
+                material.PbrMetallicRoughness.MetallicFactor = (float)rhinoMaterial.PhysicallyBased.Metallic;
+                material.PbrMetallicRoughness.RoughnessFactor = (float)rhinoMaterial.PhysicallyBased.Roughness;
             }
 
             if (normalTexture != null)
@@ -91,9 +80,186 @@ namespace glTF_BinExporter
             if (emissiveTexture != null)
             {
                 material.EmissiveTexture = AddTexture(emissiveTexture.FileReference.FullPath);
+
+                float emissionMultiplier = 1.0f;
+
+                var param = rhinoMaterial.RenderMaterial.GetParameter("emission-multiplier");
+
+                if (param != null)
+                {
+                    emissionMultiplier = (float)Convert.ToDouble(param);
+                }
+
+                material.EmissiveFactor = new float[]
+                {
+                    emissionMultiplier,
+                    emissionMultiplier,
+                    emissionMultiplier,
+                };
+            }
+            else
+            {
+                material.EmissiveFactor = new float[]
+                {
+                    rhinoMaterial.PhysicallyBased.Emission.R,
+                    rhinoMaterial.PhysicallyBased.Emission.G,
+                    rhinoMaterial.PhysicallyBased.Emission.B,
+                };
             }
 
             return dummy.Materials.AddAndReturnIndex(material);
+        }
+
+        void HandleBaseColor(Rhino.DocObjects.Material rhinoMaterial, glTFLoader.Schema.Material gltfMaterial)
+        {
+            Rhino.DocObjects.Texture baseColorDoc = rhinoMaterial.GetTexture(TextureType.PBR_BaseColor);
+            Rhino.DocObjects.Texture alphaTextureDoc = rhinoMaterial.GetTexture(TextureType.PBR_Alpha);
+
+            RenderTexture baseColorTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.PbrBaseColor);
+            RenderTexture alphaTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.PbrAlpha);
+            
+            bool hasBaseColorTexture = baseColorDoc == null ? false : baseColorDoc.Enabled;
+            bool hasAlphaTexture = alphaTextureDoc == null ? false : alphaTextureDoc.Enabled;
+
+            bool baseColorDiffuseAlphaForTransparency = rhinoMaterial.PhysicallyBased.UseBaseColorTextureAlphaForObjectAlphaTransparencyTexture;
+
+            if(!baseColorDiffuseAlphaForTransparency && !hasAlphaTexture)
+            {
+                gltfMaterial.AlphaMode = glTFLoader.Schema.Material.AlphaModeEnum.OPAQUE;
+            }
+            else
+            {
+                gltfMaterial.AlphaMode = glTFLoader.Schema.Material.AlphaModeEnum.BLEND;
+            }
+
+            Color4f baseColor = rhinoMaterial.PhysicallyBased.BaseColor;
+
+            if (workflow.PreProcessColors)
+            {
+                baseColor = Color4f.ApplyGamma(baseColor, workflow.PreProcessGamma);
+            }
+
+            if (!hasBaseColorTexture && !hasAlphaTexture)
+            {
+                float alpha = 1.0f;
+
+                if (baseColorDiffuseAlphaForTransparency)
+                {
+                    alpha = rhinoMaterial.PhysicallyBased.BaseColor.A;
+                }
+
+                alpha *= (float)rhinoMaterial.PhysicallyBased.Alpha;
+
+                gltfMaterial.PbrMetallicRoughness.BaseColorFactor = new float[]
+                {
+                    baseColor.R,
+                    baseColor.G,
+                    baseColor.B,
+                    alpha,
+                };
+            }
+            else
+            {
+                if(!hasAlphaTexture)
+                {
+                    float alpha = (float)rhinoMaterial.PhysicallyBased.Alpha;
+                    alphaTexture = CreateSolidColorRhinoTexture(new Color4f(alpha, alpha, alpha, 1.0f), new Size(256, 256));
+                }
+
+                gltfMaterial.PbrMetallicRoughness.BaseColorTexture = CombineBaseColorAndAlphaTexture(baseColorTexture, alphaTexture, baseColorDiffuseAlphaForTransparency, baseColor);
+            }
+        }
+
+        RenderTexture CreateSolidColorRhinoTexture(Color4f color, Size size)
+        {
+            Bitmap bmp = SolidColorImage(color, size);
+
+            return RenderTexture.NewBitmapTexture(bmp, null);
+        }
+
+        Bitmap SolidColorImage(Color4f color, Size size)
+        {
+            Bitmap bmp = new Bitmap(size.Width, size.Height);
+
+            using(Graphics gfx = Graphics.FromImage(bmp))
+            {
+                gfx.FillRectangle(new SolidBrush(color.AsSystemColor()), 0, 0, size.Width, size.Height);
+            }
+
+            return bmp;
+        }
+
+        TextureInfo CombineBaseColorAndAlphaTexture(Rhino.Render.RenderTexture baseColorTexture, Rhino.Render.RenderTexture alphaTexture, bool baseColorDiffuseAlphaForTransparency, Color4f baseColor)
+        {
+            bool hasBaseColorTexture = baseColorTexture != null;
+
+            int baseColorWidth, baseColorHeight, baseColorDepth;
+            baseColorWidth = baseColorHeight = baseColorDepth = 0;
+
+            if (hasBaseColorTexture)
+            {
+                baseColorTexture.PixelSize(out baseColorWidth, out baseColorHeight, out baseColorDepth);
+            }
+            
+            alphaTexture.PixelSize(out int alphaWidth, out int alphaHeight, out int alphaDepth);
+
+            int width = Math.Max(baseColorWidth, alphaWidth);
+            int height = Math.Max(baseColorHeight, alphaHeight);
+
+            if(width <= 0)
+            {
+                width = 1024;
+            }
+
+            if(height <= 0)
+            {
+                height = 1024;
+            }
+
+            TextureEvaluator baseColorTextureEvaluator = baseColorTexture.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
+            TextureEvaluator alphaTextureEvaluator = alphaTexture.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
+
+            Bitmap bitmap = new Bitmap(width, height);
+
+            for(int i = 0; i < width; i++)
+            {
+                for(int j = 0; j < height; j++)
+                {
+                    double x = (double)i / ((double)(width - 1));
+                    double y = (double)j / ((double)(height - 1));
+
+                    Point3d uvw = new Point3d(x, y, 0.0);
+
+                    Color4f baseColorOut = baseColor;
+
+                    if (hasBaseColorTexture)
+                    {
+                        baseColorOut = baseColorTextureEvaluator.GetColor(uvw, Vector3d.Zero, Vector3d.Zero);
+
+                        if(workflow.PreProcessTextures)
+                        {
+                            baseColorOut = Color4f.ApplyGamma(baseColorOut, workflow.PreProcessGamma);
+                        }
+                    }
+
+                    if(!baseColorDiffuseAlphaForTransparency)
+                    {
+                        baseColorOut = new Color4f(baseColorOut.R, baseColorOut.G, baseColorOut.B, 1.0f);
+                    }
+
+                    Color4f alphaColor = alphaTextureEvaluator.GetColor(uvw, Vector3d.Zero, Vector3d.Zero);
+
+                    float alpha = baseColor.A * alphaColor.L;
+
+                    Color4f colorFinal = new Color4f(baseColorOut.R, baseColorOut.G, baseColorOut.B, alpha);
+
+                    bitmap.SetPixel(i, j, colorFinal.AsSystemColor());
+                }
+            }
+
+            bitmap.Save(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "out.png"));
+
+            return GetTextureInfoFromBitmap(bitmap);
         }
 
         private int AddTextureToBuffers(string texturePath)
@@ -173,21 +339,9 @@ namespace glTF_BinExporter
 
         private byte[] GetImageBytesFromFile(string fileName)
         {
-            using (FileStream stream = File.Open(fileName, FileMode.Open))
-            {
-                //padding so 4 byte aligned
-                long length = stream.Length;
-                long mod = length % 4;
-                if (mod != 0)
-                {
-                    length += 4 - mod;
-                }
-                var bytes = new byte[length];
+            Bitmap bmp = new Bitmap(fileName);
 
-                stream.Read(bytes, 0, (int)stream.Length);
-
-                return bytes;
-            }
+            return GetImageBytes(bmp);
         }
 
         private glTFLoader.Schema.TextureInfo AddTexture(string texturePath)
@@ -213,11 +367,11 @@ namespace glTF_BinExporter
 
         public glTFLoader.Schema.TextureInfo AddMetallicRoughnessTexture(Rhino.DocObjects.Material rhinoMaterial)
         {
-            // glTF metallicRoughness expects a texture with metal in the green channel and roughness in the blue channel.
-            // This method mashes the two textures into a PNG, then writes it to a texture buffer.
+            Rhino.DocObjects.Texture metalTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Metallic);
+            Rhino.DocObjects.Texture roughnessTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Roughness);
 
-            var isMetalTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Metallic) != null;
-            var isRoughnessTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Roughness) != null;
+            bool hasMetalTexture = metalTexture == null ? false : metalTexture.Enabled;
+            bool hasRoughnessTexture = roughnessTexture == null ? false : roughnessTexture.Enabled;
 
             RenderTexture renderTextureMetal = null;
             RenderTexture renderTextureRoughness = null;
@@ -228,71 +382,83 @@ namespace glTF_BinExporter
             int rHeight = 0;
 
             // Get the textures
-            if (isMetalTexture)
+            if (hasMetalTexture)
             {
-                // Get the texture
                 renderTextureMetal = rhinoMaterial.RenderMaterial.GetTextureFromUsage(Rhino.Render.RenderMaterial.StandardChildSlots.PbrMetallic);
-                // Figure out the size of the textures
                 renderTextureMetal.PixelSize(out mWidth, out mHeight, out int _w0);
             }
 
-            if (isRoughnessTexture)
+            if (hasRoughnessTexture)
             {
-                // Get the texture
                 renderTextureRoughness = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.PbrRoughness);
-                // Figure out the size of the textures
                 renderTextureRoughness.PixelSize(out rWidth, out rHeight, out int _w1);
             }
 
-            // Figure out the size of the new combined texture
-            // TODO: This is probably not great if mW > rW && mH < rH
             int width = Math.Max(mWidth, rWidth);
             int height = Math.Max(mHeight, rHeight);
 
-            byte[] imgMetal = null;
-            byte[] imgRoughness = null;
+            TextureEvaluator evalMetal = null;
+            TextureEvaluator evalRoughness = null;
 
             // Metal
-            if (isMetalTexture)
+            if (hasMetalTexture)
             {
-                var evalMetal = renderTextureMetal.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
-                imgMetal = evalMetal.WriteToByteArray(width, height).ToArray();
+                evalMetal = renderTextureMetal.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
             }
 
             // Roughness
-            if (isRoughnessTexture)
+            if (hasRoughnessTexture)
             {
-                var evalRoughness = renderTextureRoughness.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
-                imgRoughness = evalRoughness.WriteToByteArray(width, height).ToArray();
+                evalRoughness = renderTextureRoughness.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
             }
 
             // Copy Metal to the blue channel, roughness to the green
             var bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            for (var y = 0; y < height - 1; y += 1)
+            float metallic = (float)rhinoMaterial.PhysicallyBased.Metallic;
+            float roughness = (float)rhinoMaterial.PhysicallyBased.Roughness;
+
+            for (var j = 0; j < height - 1; j += 1)
             {
-                for (var x = 0; x < width - 1; x += 1)
+                for (var i = 0; i < width - 1; i += 1)
                 {
-                    int g = 0;
-                    int b = 0;
-                    if (isMetalTexture)
+                    double x = (double)i / (double)(width - 1);
+                    double y = (double)j / (double)(height - 1);
+
+                    Point3d uvw = new Point3d(x, y, 0.0);
+
+                    float g = 0;
+                    float b = 0;
+                    if (hasMetalTexture)
                     {
-                        b = imgMetal[(y * width + x) * 4 + 1]; // Note: Not sure if this offset is the red, or the green channel
+                        Color4f metal = evalMetal.GetColor(uvw, Vector3d.Zero, Vector3d.Zero);
+                        b = metal.L; //grayscale maps, so we want lumonosity
+                    }
+                    else
+                    {
+                        b = metallic;
                     }
 
-                    if (isRoughnessTexture)
+                    if (hasRoughnessTexture)
                     {
-                        g = imgRoughness[(y * width + x) * 4 + 2]; // Note: Not sure if this offset is the green or the blue channel
+                        Color4f roughnessColor = evalRoughness.GetColor(uvw, Vector3d.ZAxis, Vector3d.Zero);
+                        g = roughnessColor.L; //grayscale maps, so we want lumonosity
+                    }
+                    else
+                    {
+                        g = roughness;
                     }
 
-                    // GLTF expects metallic and roughness textures to be in linear color space.
-                    //TODO: This doesn't seem right... var color = ColorUtils.ConvertSRGBToLinear(new Color4f(0, g / 255.0f, b / 255.0f, 1.0f));
-                    // Using it without gammacorrecting for now.
-                    var color = new Color4f(0, g / 255.0f, b / 255.0f, 1.0f);
-                    bitmap.SetPixel(x, height - y - 1, color.AsSystemColor());
+                    Color4f color = new Color4f(0.0f, g, b, 1.0f);
+                    bitmap.SetPixel(i, height - j - 1, color.AsSystemColor());
                 }
             }
 
+            return GetTextureInfoFromBitmap(bitmap);
+        }
+
+        private glTFLoader.Schema.TextureInfo GetTextureInfoFromBitmap(Bitmap bitmap)
+        {
             var image = GetImageFromBitmap(bitmap);
 
             int imageIdx = dummy.Images.AddAndReturnIndex(image);

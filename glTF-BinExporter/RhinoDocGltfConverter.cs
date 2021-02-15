@@ -17,20 +17,23 @@ namespace glTF_BinExporter
 {
     class RhinoDocGltfConverter
     {
-        public RhinoDocGltfConverter(glTFExportOptions options, IEnumerable<RhinoObject> objects)
+        public RhinoDocGltfConverter(glTFExportOptions options, IEnumerable<RhinoObject> objects, LinearWorkflow workflow)
         {
             this.options = options;
             this.objects = objects;
+            this.workflow = workflow;
         }
 
-        public RhinoDocGltfConverter(glTFExportOptions options, RhinoDoc doc)
+        public RhinoDocGltfConverter(glTFExportOptions options, RhinoDoc doc, LinearWorkflow workflow)
         {
             this.options = options;
             this.objects = doc.Objects;
+            this.workflow = null;
         }
 
         private IEnumerable<RhinoObject> objects = null;
         private glTFExportOptions options = null;
+        private LinearWorkflow workflow = null;
 
         private Dictionary<Guid, int> materialsMap = new Dictionary<Guid, int>();
 
@@ -230,13 +233,14 @@ namespace glTF_BinExporter
                 // Create mesh
                 primitives.Add(primitive);
             }
+
             var mesh = new glTFLoader.Schema.Mesh()
             {
                 Primitives = primitives.ToArray(),
             };
-            
+
             int meshIndex = dummy.Meshes.AddAndReturnIndex(mesh);
-            
+
             var node = new Node()
             {
                 Mesh = meshIndex,
@@ -624,7 +628,7 @@ namespace glTF_BinExporter
 
                 // Create mesh	
                 primitives.Add(primitive);	
-            }	
+            }
 
             var mesh = new glTFLoader.Schema.Mesh()
             {
@@ -806,7 +810,7 @@ namespace glTF_BinExporter
         {
             if(!materialsMap.TryGetValue(materialId, out int materialIndex))
             {
-                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, dummy, binaryBuffer, material);
+                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, dummy, binaryBuffer, material, workflow);
                 materialIndex = materialConverter.AddMaterial();
                 materialsMap.Add(materialId, materialIndex);
             }
