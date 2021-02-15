@@ -12,6 +12,6 @@ namespace glTF_BinExporter
         public bool UseBinary = true;
         public int DracoCompressionLevel = 10;
         public int DracoQuantizationBits = 16;
-        public bool MapRhinoZToGltfY = false;
+        public bool MapRhinoZToGltfY = true;
     }
 }
