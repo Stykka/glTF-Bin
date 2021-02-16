@@ -38,6 +38,29 @@ namespace glTF_BinExporter
 
         private List<byte> binaryBuffer = new List<byte>();
 
+        private readonly Transform ZtoYUp = new Transform()
+        {
+            M00 = 1,
+            M01 = 0,
+            M02 = 0,
+            M03 = 0,
+
+            M10 = 0,
+            M11 = 0,
+            M12 = 1,
+            M13 = 0,
+
+            M20 = 0,
+            M21 = -1,
+            M22 = 0,
+            M23 = 0,
+
+            M30 = 0,
+            M31 = 0,
+            M32 = 0,
+            M33 = 1,
+        };
+
         public Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
@@ -107,20 +130,13 @@ namespace glTF_BinExporter
 
             var primitives = new List<MeshPrimitive>();
 
-            var transformYUp = Transform.Identity;
-            // Leave X as is
-            // Change Y to Z
-            transformYUp.M11 = 0;
-            transformYUp.M12 = 1;
-
-            // Change Z to -Y
-            transformYUp.M21 = -1;
-            transformYUp.M22 = 0;
-
             // For each rhino mesh, create gl-buffers, gl-meshes, etc.
             foreach (var rhinoMesh in rhinoMeshes)
             {
-                rhinoMesh.Transform(transformYUp);
+                if(options.MapRhinoZToGltfY)
+                {
+                    rhinoMesh.Transform(ZtoYUp);
+                }
                 rhinoMesh.TextureCoordinates.ReverseTextureCoordinates(1);
 
                 var dracoComp = DracoCompression.Compress(
@@ -347,6 +363,12 @@ namespace glTF_BinExporter
 
             foreach (var rhinoMesh in rhinoMeshes)
             {
+                if (options.MapRhinoZToGltfY)
+                {
+                    rhinoMesh.Transform(ZtoYUp);
+                }
+                rhinoMesh.TextureCoordinates.ReverseTextureCoordinates(1);
+
                 rhinoMesh.Faces.ConvertQuadsToTriangles();
 
                 byte[] verticesBytes = GetVerticesBytes(rhinoMesh.Vertices, out Point3d vtxMin, out Point3d vtxMax);
@@ -503,6 +525,12 @@ namespace glTF_BinExporter
 
             foreach (var rhinoMesh in rhinoMeshes)	
             {
+                if (options.MapRhinoZToGltfY)
+                {
+                    rhinoMesh.Transform(ZtoYUp);
+                }
+                rhinoMesh.TextureCoordinates.ReverseTextureCoordinates(1);
+
                 rhinoMesh.Faces.ConvertQuadsToTriangles();
 
                 var vtxBuffer = CreateVerticesBuffer(rhinoMesh.Vertices, out Point3d vtxMin, out Point3d vtxMax);
@@ -664,17 +692,16 @@ namespace glTF_BinExporter
 
             foreach (Point3d vertex in vertices)
             {
-                floats.AddRange(new float[] { (float)vertex.X, (float)vertex.Z, (float)-vertex.Y });
+                floats.AddRange(new float[] { (float)vertex.X, (float)vertex.Y, (float)vertex.Z });
 
                 vtxMin.X = Math.Min(vtxMin.X, vertex.X);
-                // Switch Y<=>Z for GL coords	
-                vtxMin.Y = Math.Min(vtxMin.Y, vertex.Z);
-                vtxMin.Z = Math.Min(vtxMin.Z, -vertex.Y);
-
                 vtxMax.X = Math.Max(vtxMax.X, vertex.X);
-                // Switch Y<=>Z for GL coords	
-                vtxMax.Y = Math.Max(vtxMax.Y, vertex.Z);
-                vtxMax.Z = Math.Max(vtxMax.Z, -vertex.Y);
+
+                vtxMin.Y = Math.Min(vtxMin.Y, vertex.Y);
+                vtxMax.Y = Math.Max(vtxMax.Y, vertex.Y);
+                
+                vtxMin.Z = Math.Min(vtxMin.Z, vertex.Z);
+                vtxMax.Z = Math.Max(vtxMax.Z, vertex.Z);
             }
 
             min = vtxMin;
@@ -742,17 +769,16 @@ namespace glTF_BinExporter
 
             foreach (Vector3f normal in normals)
             {
-                floats.AddRange(new float[] { normal.X, normal.Z, -normal.Y });
+                floats.AddRange(new float[] { normal.X, normal.Y, normal.Z });
 
                 vMin.X = Math.Min(vMin.X, normal.X);
-                // Switch Y<=>Z for GL coords	
-                vMin.Y = Math.Min(vMin.Y, normal.Z);
-                vMin.Z = Math.Min(vMin.Z, -normal.Y);
-
                 vMax.X = Math.Max(vMax.X, normal.X);
-                // Switch Y<=>Z for GL coords	
-                vMax.Y = Math.Max(vMax.Y, normal.Z);
-                vMax.Z = Math.Max(vMax.Z, -normal.Y);
+
+                vMin.Y = Math.Min(vMin.Y, normal.Y);
+                vMax.Y = Math.Max(vMax.Y, normal.Y);
+
+                vMax.Z = Math.Max(vMax.Z, normal.Z);
+                vMin.Z = Math.Min(vMin.Z, normal.Z);
             }
 
             IEnumerable<byte> bytesEnumerable = floats.SelectMany(value => BitConverter.GetBytes(value));
@@ -783,15 +809,13 @@ namespace glTF_BinExporter
 
             foreach (Point2f coordinate in texCoords)
             {
-                coordinates.AddRange(new float[] { coordinate.X, -coordinate.Y });
+                coordinates.AddRange(new float[] { coordinate.X, coordinate.Y });
 
                 texCoordsMin.X = Math.Min(texCoordsMin.X, coordinate.X);
-                // Switch Y<=>Z for GL coords	
-                texCoordsMin.Y = Math.Min(texCoordsMin.Y, -coordinate.Y);
-
                 texCoordsMax.X = Math.Max(texCoordsMax.X, coordinate.X);
-                // Switch Y<=>Z for GL coords	
-                texCoordsMax.Y = Math.Max(texCoordsMax.Y, -coordinate.Y);
+
+                texCoordsMin.Y = Math.Min(texCoordsMin.Y, coordinate.Y);
+                texCoordsMax.Y = Math.Max(texCoordsMax.Y, coordinate.Y);
             }
 
             IEnumerable<byte> bytesEnumerable = coordinates.SelectMany(value => BitConverter.GetBytes(value));

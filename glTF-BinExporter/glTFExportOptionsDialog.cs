@@ -20,6 +20,8 @@ namespace glTF_BinExporter
         private Button cancelButton = new Button();
         private Button okButton = new Button();
 
+        private CheckBox mapZtoY = new CheckBox();
+
         private glTFExportOptions options = null;
 
         public ExportOptionsDialog(glTFExportOptions options)
@@ -42,11 +44,15 @@ namespace glTF_BinExporter
 
             okButton.Text = "Ok";
 
+            mapZtoY.Text = "Map Rhino Z to glTF Y";
+
             OptionsToDialog();
 
             useDracoCompressionCheck.CheckedChanged += UseDracoCompressionCheck_CheckedChanged;
             dracoCompressionLevelInput.ValueChanged += DracoCompressionLevelInput_ValueChanged;
             dracoQuantizationBitsInput.ValueChanged += DracoQuantizationBitsInput_ValueChanged;
+
+            mapZtoY.CheckedChanged += MapZtoY_CheckedChanged;
 
             cancelButton.Click += CancelButton_Click;
             okButton.Click += OkButton_Click;
@@ -60,10 +66,16 @@ namespace glTF_BinExporter
                     new TableRow(useDracoCompressionCheck, null),
                     new TableRow(dracoCompressionLabel, dracoCompressionLevelInput),
                     new TableRow(dracoQuantizationBitsLabel, dracoQuantizationBitsInput),
+                    new TableRow(mapZtoY, null),
                     new TableRow(cancelButton, okButton),
                     null,
                 }
             };
+        }
+
+        private void MapZtoY_CheckedChanged(object sender, EventArgs e)
+        {
+            options.MapRhinoZToGltfY = mapZtoY.Checked.HasValue ? mapZtoY.Checked.Value : false;
         }
 
         private void OptionsToDialog()
@@ -74,6 +86,8 @@ namespace glTF_BinExporter
 
             dracoCompressionLevelInput.Value = options.DracoCompressionLevel;
             dracoQuantizationBitsInput.Value = options.DracoQuantizationBits;
+
+            mapZtoY.Checked = options.MapRhinoZToGltfY;
         }
 
         private void EnableDisableDracoControls(bool enable)

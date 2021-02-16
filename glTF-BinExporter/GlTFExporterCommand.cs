@@ -52,6 +52,8 @@ namespace glTF_BinExporter
                     Rhino.Input.RhinoGet.GetInteger("Draco Compression Level (max=10)", true, ref opts.DracoCompressionLevel, 1, 10);
                     Rhino.Input.RhinoGet.GetInteger("Quantization", true, ref opts.DracoQuantizationBits, 8, 32);
                 }
+
+                Rhino.Input.RhinoGet.GetBool("Map Rhino Z to glTF Y", true, "No", "Yes", ref opts.MapRhinoZToGltfY);
             }
             else
             {
