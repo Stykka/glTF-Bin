@@ -69,7 +69,7 @@ namespace glTF_BinExporter
 
             if (normalTexture != null)
             {
-                material.NormalTexture = AddTextureNormal(normalTexture.FileReference.FullPath);
+                material.NormalTexture = AddTextureNormal(normalTexture);
             }
 
             if (occlusionTexture != null)
@@ -351,11 +351,100 @@ namespace glTF_BinExporter
             return new glTFLoader.Schema.TextureInfo() { Index = textureIdx, TexCoord = 0 };
         }
 
-        private glTFLoader.Schema.MaterialNormalTextureInfo AddTextureNormal(string texturePath)
+        private glTFLoader.Schema.MaterialNormalTextureInfo AddTextureNormal(Rhino.DocObjects.Texture normalTexture)
         {
-            int textureIdx = AddTextureToBuffers(texturePath);
+            Rhino.Render.RenderTexture normalRenderTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.Bump);
 
-            return new glTFLoader.Schema.MaterialNormalTextureInfo() { Index = textureIdx, TexCoord = 0, Scale = 0.9f };
+            int textureIdx = AddNormalTexture(normalTexture, normalRenderTexture);
+
+            double scale = rhinoMaterial.RenderMaterial.GetTextureAmountFromUsage(RenderMaterial.StandardChildSlots.Bump) / 100.0;
+
+            return new glTFLoader.Schema.MaterialNormalTextureInfo()
+            {
+                Index = textureIdx,
+                TexCoord = 0,
+                Scale = (float)scale,
+            };
+        }
+
+        private int AddNormalTexture(Rhino.DocObjects.Texture normalTexture, RenderTexture normalRenderTexture)
+        {
+            if (normalRenderTexture.IsNormalMap())
+            {
+                return AddTextureToBuffers(normalTexture.FileReference.FullPath);
+            }
+            else
+            {
+                Bitmap bmp = ConvertBumpToNormal(normalRenderTexture);
+                return GetTextureFromBitmap(bmp);
+            }
+        }
+
+        private Bitmap ConvertBumpToNormal(RenderTexture bumpMapTexture)
+        {
+            bumpMapTexture.PixelSize(out int width, out int height, out int depth);
+
+            if(width <= 0)
+            {
+                width = 1024;
+            }
+
+            if(height <= 0)
+            {
+                height = 1024;
+            }
+
+            TextureEvaluator evaluator = bumpMapTexture.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
+
+            Bitmap bmp = new Bitmap(width, height);
+
+            //Sobel filter for bump to normal conversion https://en.wikipedia.org/wiki/Sobel_operator
+
+            double widthScaler = 1.0 / (width - 1);
+            double heightScaler = 1.0 / (height - 1);
+
+            for (int x = 0; x < width; x++)
+            {
+                for(int y = 0; y < height; y++)
+                {
+                    Point3d aLocation = new Point3d(Mod(x - 1, width) * widthScaler,  Mod(y - 1, height) * heightScaler, 0.0);
+                    Point3d bLocation = new Point3d(Mod(x, width) * widthScaler,      Mod(y - 1, height) * heightScaler, 0.0);
+                    Point3d cLocation = new Point3d(Mod(x + 1, width) * widthScaler,  Mod(y - 1, height) * heightScaler, 0.0);
+                    Point3d dLocation = new Point3d(Mod(x - 1, width) * widthScaler,  Mod(y, height) * heightScaler, 0.0);
+                    Point3d fLocation = new Point3d(Mod(x + 1, width) * widthScaler,  Mod(y, height) * heightScaler, 0.0);
+                    Point3d gLocation = new Point3d(Mod(x - 1, width) * widthScaler,  Mod(y + 1, height) * heightScaler, 0.0);
+                    Point3d hLocation = new Point3d(Mod(x, width) * widthScaler,      Mod(y + 1, height) * heightScaler, 0.0);
+                    Point3d iLocation = new Point3d(Mod(x + 1, width) * widthScaler,  Mod(y + 1, height) * heightScaler, 0.0);
+
+                    float a = evaluator.GetColor(aLocation, Vector3d.Zero, Vector3d.Zero).L;
+                    float b = evaluator.GetColor(bLocation, Vector3d.Zero, Vector3d.Zero).L;
+                    float c = evaluator.GetColor(cLocation, Vector3d.Zero, Vector3d.Zero).L;
+                    float d = evaluator.GetColor(dLocation, Vector3d.Zero, Vector3d.Zero).L;
+                    float f = evaluator.GetColor(fLocation, Vector3d.Zero, Vector3d.Zero).L;
+                    float g = evaluator.GetColor(gLocation, Vector3d.Zero, Vector3d.Zero).L;
+                    float h = evaluator.GetColor(hLocation, Vector3d.Zero, Vector3d.Zero).L;
+                    float i = evaluator.GetColor(iLocation, Vector3d.Zero, Vector3d.Zero).L;
+
+                    float dX = a - c + 2.0f * d + -2.0f * f + g - f;
+                    float dY = a + 2.0f * b + c - g - 2.0f * h - i;
+
+                    Vector3f normal = new Vector3f(dX, dY, 1.0f);
+                    normal.Unitize();
+
+                    normal = normal * 0.5f + new Vector3f(0.5f, 0.5f, 0.5f);
+
+                    Color4f color = new Color4f(normal.X, normal.Y, normal.Z, 1.0f);
+
+                    bmp.SetPixel(x, y, color.AsSystemColor());
+                }
+            }
+
+            return bmp;
+        }
+
+        public int Mod(int x, int m)
+        {
+            return (x % m + m) % m;
         }
 
         private glTFLoader.Schema.MaterialOcclusionTextureInfo AddTextureOcclusion(string texturePath)
@@ -457,7 +546,7 @@ namespace glTF_BinExporter
             return GetTextureInfoFromBitmap(bitmap);
         }
 
-        private glTFLoader.Schema.TextureInfo GetTextureInfoFromBitmap(Bitmap bitmap)
+        private int GetTextureFromBitmap(Bitmap bitmap)
         {
             var image = GetImageFromBitmap(bitmap);
 
@@ -469,7 +558,12 @@ namespace glTF_BinExporter
                 Sampler = 0
             };
 
-            int textureIdx = dummy.Textures.AddAndReturnIndex(texture);
+            return dummy.Textures.AddAndReturnIndex(texture);
+        }
+
+        private glTFLoader.Schema.TextureInfo GetTextureInfoFromBitmap(Bitmap bitmap)
+        {
+            int textureIdx = GetTextureFromBitmap(bitmap);
 
             return new glTFLoader.Schema.TextureInfo()
             {
