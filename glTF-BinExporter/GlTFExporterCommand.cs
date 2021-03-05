@@ -40,7 +40,7 @@ namespace glTF_BinExporter
 
             bool binary = GlTFUtils.IsFileGltfBinary(dialog.FileName);
 
-            var opts = new glTFExportOptions() { UseDracoCompression = false, DracoCompressionLevel = 10, DracoQuantizationBits = 16, UseBinary = binary };
+            var opts = new glTFExportOptions() { UseDracoCompression = false, DracoCompressionLevel = 10, DracoQuantizationBitsPosition = 11, DracoQuantizationBitsNormal = 8, DracoQuantizationBitsTexture = 10, UseBinary = binary };
 
             if (mode == RunMode.Scripted)
             {
@@ -50,7 +50,9 @@ namespace glTF_BinExporter
                 if (opts.UseDracoCompression)
                 {
                     Rhino.Input.RhinoGet.GetInteger("Draco Compression Level (max=10)", true, ref opts.DracoCompressionLevel, 1, 10);
-                    Rhino.Input.RhinoGet.GetInteger("Quantization", true, ref opts.DracoQuantizationBits, 8, 32);
+                    Rhino.Input.RhinoGet.GetInteger("Quantization Position", true, ref opts.DracoQuantizationBitsPosition, 8, 32);
+                    Rhino.Input.RhinoGet.GetInteger("Quantization Normal", true, ref opts.DracoQuantizationBitsNormal, 8, 32);
+                    Rhino.Input.RhinoGet.GetInteger("Quantization Texture", true, ref opts.DracoQuantizationBitsTexture, 8, 32);
                 }
 
                 Rhino.Input.RhinoGet.GetBool("Map Rhino Z to glTF Y", true, "No", "Yes", ref opts.MapRhinoZToGltfY);

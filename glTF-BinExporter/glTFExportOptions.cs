@@ -10,8 +10,10 @@ namespace glTF_BinExporter
     {
         public bool UseDracoCompression = false;
         public bool UseBinary = true;
-        public int DracoCompressionLevel = 10;
-        public int DracoQuantizationBits = 16;
         public bool MapRhinoZToGltfY = true;
+        public int DracoCompressionLevel = 10;
+        public int DracoQuantizationBitsPosition = 11;
+        public int DracoQuantizationBitsNormal = 8;
+        public int DracoQuantizationBitsTexture = 10;
     }
 }
