@@ -58,20 +58,28 @@ namespace glTF_BinExporter
             cancelButton.Click += CancelButton_Click;
             okButton.Click += OkButton_Click;
 
-            this.Content = new TableLayout()
+            var gBox = new GroupBox() { Text = "Draco Quantization Bits" };
+            gBox.Content = new TableLayout()
             {
                 Padding = 5,
                 Spacing = new Eto.Drawing.Size(2, 2),
-                Rows =
-                {
-                    new TableRow(useDracoCompressionCheck, null),
-                    new TableRow(dracoCompressionLabel, dracoCompressionLevelInput),
-                    new TableRow(mapZtoY, null),
-                    new TableRow(dracoQuantizationBitsLabel, dracoQuantizationBitsInputPosition, dracoQuantizationBitsInputNormal, dracoQuantizationBitsInputTexture),
-                    new TableRow(cancelButton, okButton),
-                    null,
+                Rows = {
+                    new TableRow("Position", "Normal", "Texture"),
+                    new TableRow(dracoQuantizationBitsInputPosition, dracoQuantizationBitsInputNormal, dracoQuantizationBitsInputTexture)
                 }
             };
+
+            var layout = new DynamicLayout()
+            {
+                Padding = 5,
+                Spacing = new Eto.Drawing.Size(2, 2)
+            };
+            layout.AddRow(mapZtoY, null);
+            layout.AddSeparateRow(useDracoCompressionCheck, null);
+            layout.AddSeparateRow(dracoCompressionLabel, dracoCompressionLevelInput, null);
+            layout.AddSeparateRow(gBox, null);
+            layout.AddSeparateRow(null, cancelButton, okButton);
+            this.Content = layout;
         }
 
         private void MapZtoY_CheckedChanged(object sender, EventArgs e)
