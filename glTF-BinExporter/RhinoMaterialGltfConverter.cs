@@ -67,17 +67,17 @@ namespace glTF_BinExporter
                 material.PbrMetallicRoughness.RoughnessFactor = (float)rhinoMaterial.PhysicallyBased.Roughness;
             }
 
-            if (normalTexture != null)
+            if (normalTexture != null && normalTexture.Enabled)
             {
                 material.NormalTexture = AddTextureNormal(normalTexture);
             }
 
-            if (occlusionTexture != null)
+            if (occlusionTexture != null && occlusionTexture.Enabled)
             {
                 material.OcclusionTexture = AddTextureOcclusion(occlusionTexture.FileReference.FullPath);
             }
 
-            if (emissiveTexture != null)
+            if (emissiveTexture != null && emissiveTexture.Enabled)
             {
                 material.EmissiveTexture = AddTexture(emissiveTexture.FileReference.FullPath);
 
@@ -227,6 +227,8 @@ namespace glTF_BinExporter
                 {
                     double x = (double)i / ((double)(width - 1));
                     double y = (double)j / ((double)(height - 1));
+
+                    y = 1.0 - y;
 
                     Point3d uvw = new Point3d(x, y, 0.0);
 
@@ -407,14 +409,14 @@ namespace glTF_BinExporter
             {
                 for(int y = 0; y < height; y++)
                 {
-                    Point3d aLocation = new Point3d(Mod(x - 1, width) * widthScaler,  Mod(y - 1, height) * heightScaler, 0.0);
-                    Point3d bLocation = new Point3d(Mod(x, width) * widthScaler,      Mod(y - 1, height) * heightScaler, 0.0);
-                    Point3d cLocation = new Point3d(Mod(x + 1, width) * widthScaler,  Mod(y - 1, height) * heightScaler, 0.0);
-                    Point3d dLocation = new Point3d(Mod(x - 1, width) * widthScaler,  Mod(y, height) * heightScaler, 0.0);
-                    Point3d fLocation = new Point3d(Mod(x + 1, width) * widthScaler,  Mod(y, height) * heightScaler, 0.0);
-                    Point3d gLocation = new Point3d(Mod(x - 1, width) * widthScaler,  Mod(y + 1, height) * heightScaler, 0.0);
-                    Point3d hLocation = new Point3d(Mod(x, width) * widthScaler,      Mod(y + 1, height) * heightScaler, 0.0);
-                    Point3d iLocation = new Point3d(Mod(x + 1, width) * widthScaler,  Mod(y + 1, height) * heightScaler, 0.0);
+                    Point3d aLocation = new Point3d(Mod(x - 1, width) * widthScaler,  1.0 - Mod(y - 1, height) * heightScaler, 0.0);
+                    Point3d bLocation = new Point3d(Mod(x, width) * widthScaler,      1.0 - Mod(y - 1, height) * heightScaler, 0.0);
+                    Point3d cLocation = new Point3d(Mod(x + 1, width) * widthScaler,  1.0 - Mod(y - 1, height) * heightScaler, 0.0);
+                    Point3d dLocation = new Point3d(Mod(x - 1, width) * widthScaler,  1.0 - Mod(y, height) * heightScaler, 0.0);
+                    Point3d fLocation = new Point3d(Mod(x + 1, width) * widthScaler,  1.0 - Mod(y, height) * heightScaler, 0.0);
+                    Point3d gLocation = new Point3d(Mod(x - 1, width) * widthScaler,  1.0 - Mod(y + 1, height) * heightScaler, 0.0);
+                    Point3d hLocation = new Point3d(Mod(x, width) * widthScaler,      1.0 - Mod(y + 1, height) * heightScaler, 0.0);
+                    Point3d iLocation = new Point3d(Mod(x + 1, width) * widthScaler,  1.0 - Mod(y + 1, height) * heightScaler, 0.0);
 
                     float a = evaluator.GetColor(aLocation, Vector3d.Zero, Vector3d.Zero).L;
                     float b = evaluator.GetColor(bLocation, Vector3d.Zero, Vector3d.Zero).L;
