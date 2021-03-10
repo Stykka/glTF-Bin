@@ -24,11 +24,14 @@ namespace glTF_BinExporter
         public static Rhino.Geometry.Mesh[] GetMeshes(RhinoObject rhinoObject) {
             Rhino.Geometry.Mesh[] meshes;
 
-            if (rhinoObject.ObjectType == ObjectType.Mesh) {
+            if (rhinoObject.ObjectType == ObjectType.Mesh)
+            {
                 // Take the Mesh directly from the geo.
                 var meshObj = (MeshObject)rhinoObject;
                 meshes = new Rhino.Geometry.Mesh[] { meshObj.MeshGeometry };
-            } else {
+            }
+            else
+            {
                 // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
                 // First make sure the internal rhino mesh has been created
                 rhinoObject.CreateMeshes(MeshType.Preview, MeshingParameters.FastRenderMesh, true);
@@ -36,22 +39,21 @@ namespace glTF_BinExporter
                 meshes = rhinoObject.GetMeshes(MeshType.Preview);
             }
 
-            if (meshes.Length > 0) {
+            if (meshes.Length > 0)
+            {
                 var mainMesh = meshes[0];
+
                 mainMesh.EnsurePrivateCopy();
+
                 foreach (var mesh in meshes.Skip(1))
                 {
                     mainMesh.Append(mesh);
                 }
 
-                mainMesh.Weld(0.01);
-
-                mainMesh.UnifyNormals();
-                mainMesh.RebuildNormals();
-
-                // Note
                 return new Rhino.Geometry.Mesh[] { mainMesh };
-            } else {
+            }
+            else
+            {
                 return new Rhino.Geometry.Mesh[] { };
             }
         }
@@ -64,7 +66,6 @@ namespace glTF_BinExporter
         /// <returns></returns>
         public static List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
         {
-
             var rhinoObjectsRes = new List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>>();
 
             foreach (var rhinoObject in rhinoObjects)
@@ -80,12 +81,17 @@ namespace glTF_BinExporter
 
                 if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
                 {
-                    // None-block. Just add it to the result list
-                    rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(GetMeshes(rhinoObject), mat, renderMatId, rhinoObject));
-                } else if (rhinoObject.ObjectType == ObjectType.InstanceReference) {
-                    // Cast to InstanceObject/BlockInstance
-                    var instanceObject = (InstanceObject)rhinoObject;
-                    // Explode the Block
+                    var meshes = GetMeshes(rhinoObject);
+
+                    if(meshes.Length > 0) //Objects need a mesh to export
+                    {
+                        rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(meshes, mat, renderMatId, rhinoObject));
+                    }
+                }
+                else if (rhinoObject.ObjectType == ObjectType.InstanceReference)
+                {
+                    var instanceObject = rhinoObject as InstanceObject;
+
                     instanceObject.Explode(true, out RhinoObject[] pieces, out ObjectAttributes[] attribs, out Transform[] transforms);
 
                     // Transform the exploded geo into its correct place
@@ -97,15 +103,19 @@ namespace glTF_BinExporter
                         {
                             mesh.Transform(item.trans);
                         }
-
-                        // Add the exploded, transformed geo to the result list
-                        rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(meshes, mat, renderMatId, item.rhinoObject));
+                        
+                        if(meshes.Length > 0) //Objects need a mesh to export
+                        {
+                            rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(meshes, mat, renderMatId, item.rhinoObject));
+                        }
                     }
-                } else {
-                    // TODO: Should give better error message here.
+                }
+                else
+                {
                     RhinoApp.WriteLine("Unknown geo type encountered.");
                 }
             }
+
             return rhinoObjectsRes;
         }
 
