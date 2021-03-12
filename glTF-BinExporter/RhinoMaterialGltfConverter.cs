@@ -117,7 +117,9 @@ namespace glTF_BinExporter
 
             RenderTexture baseColorTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.PbrBaseColor);
             RenderTexture alphaTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.PbrAlpha);
-            
+
+            bool baseColorLinear = IsLinear(baseColorTexture);
+
             bool hasBaseColorTexture = baseColorDoc == null ? false : baseColorDoc.Enabled;
             bool hasAlphaTexture = alphaTextureDoc == null ? false : alphaTextureDoc.Enabled;
 
@@ -166,8 +168,19 @@ namespace glTF_BinExporter
                     alphaTexture = CreateSolidColorRhinoTexture(new Color4f(alpha, alpha, alpha, 1.0f), new Size(256, 256));
                 }
 
-                gltfMaterial.PbrMetallicRoughness.BaseColorTexture = CombineBaseColorAndAlphaTexture(baseColorTexture, alphaTexture, baseColorDiffuseAlphaForTransparency, baseColor);
+                gltfMaterial.PbrMetallicRoughness.BaseColorTexture = CombineBaseColorAndAlphaTexture(baseColorTexture, alphaTexture, baseColorDiffuseAlphaForTransparency, baseColor, baseColorLinear);
             }
+        }
+
+        bool IsLinear(RenderTexture texture)
+        {
+            CustomRenderContentAttribute[] attribs = texture.GetType().GetCustomAttributes(typeof(CustomRenderContentAttribute), false) as CustomRenderContentAttribute[];
+            if (attribs != null && attribs.Length > 0)
+            {
+                return attribs[0].IsLinear;
+            }
+
+            return texture.IsLinear();
         }
 
         RenderTexture CreateSolidColorRhinoTexture(Color4f color, Size size)
@@ -189,7 +202,7 @@ namespace glTF_BinExporter
             return bmp;
         }
 
-        TextureInfo CombineBaseColorAndAlphaTexture(Rhino.Render.RenderTexture baseColorTexture, Rhino.Render.RenderTexture alphaTexture, bool baseColorDiffuseAlphaForTransparency, Color4f baseColor)
+        TextureInfo CombineBaseColorAndAlphaTexture(Rhino.Render.RenderTexture baseColorTexture, Rhino.Render.RenderTexture alphaTexture, bool baseColorDiffuseAlphaForTransparency, Color4f baseColor, bool baseColorLinear)
         {
             bool hasBaseColorTexture = baseColorTexture != null;
 
@@ -238,7 +251,7 @@ namespace glTF_BinExporter
                     {
                         baseColorOut = baseColorTextureEvaluator.GetColor(uvw, Vector3d.Zero, Vector3d.Zero);
 
-                        if(workflow.PreProcessTextures)
+                        if(baseColorLinear)
                         {
                             baseColorOut = Color4f.ApplyGamma(baseColorOut, workflow.PreProcessGamma);
                         }
