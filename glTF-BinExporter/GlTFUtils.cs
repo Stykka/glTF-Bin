@@ -45,7 +45,7 @@ namespace glTF_BinExporter
                 if(MeshIsValidForExport(mesh))
                 {
                     mesh.EnsurePrivateCopy();
-                    validMeshes.Append(mesh);
+                    validMeshes.Add(mesh);
                 }
             }
 
