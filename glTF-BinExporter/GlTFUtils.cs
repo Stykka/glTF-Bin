@@ -21,41 +21,55 @@ namespace glTF_BinExporter
         /// </summary>
         /// <param name="rhinoObject"></param>
         /// <returns></returns>
-        public static Rhino.Geometry.Mesh[] GetMeshes(RhinoObject rhinoObject) {
-            Rhino.Geometry.Mesh[] meshes;
-
+        public static Rhino.Geometry.Mesh[] GetMeshes(RhinoObject rhinoObject)
+        {
+            
             if (rhinoObject.ObjectType == ObjectType.Mesh)
             {
-                // Take the Mesh directly from the geo.
-                var meshObj = (MeshObject)rhinoObject;
-                meshes = new Rhino.Geometry.Mesh[] { meshObj.MeshGeometry };
-            }
-            else
-            {
-                // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
-                // First make sure the internal rhino mesh has been created
-                rhinoObject.CreateMeshes(MeshType.Preview, MeshingParameters.FastRenderMesh, true);
-                // Then get the internal rhino meshes
-                meshes = rhinoObject.GetMeshes(MeshType.Preview);
+                MeshObject meshObj = rhinoObject as MeshObject;
+
+                return new Rhino.Geometry.Mesh[] { meshObj.MeshGeometry };
             }
 
-            if (meshes.Length > 0)
+            // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
+            // First make sure the internal rhino mesh has been created
+            rhinoObject.CreateMeshes(MeshType.Preview, MeshingParameters.FastRenderMesh, true);
+
+            // Then get the internal rhino meshes
+            Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(MeshType.Preview);
+
+            List<Rhino.Geometry.Mesh> validMeshes = new List<Mesh>();
+
+            foreach(Rhino.Geometry.Mesh mesh in meshes)
             {
-                var mainMesh = meshes[0];
-
-                mainMesh.EnsurePrivateCopy();
-
-                foreach (var mesh in meshes.Skip(1))
+                if(MeshIsValidForExport(mesh))
                 {
-                    mainMesh.Append(mesh);
+                    mesh.EnsurePrivateCopy();
+                    validMeshes.Append(mesh);
                 }
+            }
 
-                return new Rhino.Geometry.Mesh[] { mainMesh };
-            }
-            else
+            return validMeshes.Count == 0 ? new Rhino.Geometry.Mesh[] { } : validMeshes.ToArray();
+        }
+
+        public static bool MeshIsValidForExport(Rhino.Geometry.Mesh mesh)
+        {
+            if (mesh == null)
             {
-                return new Rhino.Geometry.Mesh[] { };
+                return false;
             }
+
+            if (mesh.Vertices.Count == 0)
+            {
+                return false;
+            }
+
+            if (mesh.Faces.Count == 0)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
