@@ -158,18 +158,16 @@ namespace glTF_BinExporter
             {
                 RhinoObject rhinoObject = instanceObject.InstanceDefinition.Object(i);
 
-                pieces.Add(rhinoObject);
-
                 if (rhinoObject is InstanceObject nestedObject)
                 {
                     Transform nestedTransform = instanceTransform * nestedObject.InstanceXform;
-
-                    transforms.Add(nestedTransform);
 
                     ExplodeRecursive(nestedObject, nestedTransform, pieces, transforms);
                 }
                 else
                 {
+                    pieces.Add(rhinoObject);
+
                     transforms.Add(instanceTransform);
                 }
             }
