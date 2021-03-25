@@ -72,6 +72,16 @@ namespace glTF_BinExporter
             return true;
         }
 
+        private static string GetDebugName(RhinoObject rhinoObject)
+        {
+            if(string.IsNullOrEmpty(rhinoObject.Name))
+            {
+                return "(Unnamed)";
+            }
+
+            return rhinoObject.Name;
+        }
+
         /// <summary>
         /// Takes varying RhinoObjects and returns a RhinoMesh, and a RhinoMaterial for each.
         /// Handles 
@@ -84,6 +94,12 @@ namespace glTF_BinExporter
 
             foreach (var rhinoObject in rhinoObjects)
             {
+                if(!rhinoObject.IsMeshable(MeshType.Any))
+                {
+                    RhinoApp.WriteLine("Skipping " + GetDebugName(rhinoObject) + ", object is not meshable. Object is a " + rhinoObject.ObjectType.ToString());
+                    continue;
+                }
+                
                 // FIXME: This is broken. Even though objects use the same material, different Materials are returned here.
                 var mat = rhinoObject.GetMaterial(true);
                 var renderMatId = mat.Id;
@@ -104,12 +120,15 @@ namespace glTF_BinExporter
                 }
                 else if (rhinoObject.ObjectType == ObjectType.InstanceReference)
                 {
-                    var instanceObject = rhinoObject as InstanceObject;
+                    InstanceObject instanceObject = rhinoObject as InstanceObject;
 
-                    instanceObject.Explode(true, out RhinoObject[] pieces, out ObjectAttributes[] attribs, out Transform[] transforms);
+                    List<RhinoObject> objects = new List<RhinoObject>();
+                    List<Transform> transforms = new List<Transform>();
+
+                    ExplodeRecursive(instanceObject, instanceObject.InstanceXform, objects, transforms);
 
                     // Transform the exploded geo into its correct place
-                    foreach (var item in pieces.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
+                    foreach (var item in objects.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
                     {
                         var meshes = GetMeshes(item.rhinoObject);
 
@@ -131,6 +150,29 @@ namespace glTF_BinExporter
             }
 
             return rhinoObjectsRes;
+        }
+
+        private static void ExplodeRecursive(InstanceObject instanceObject, Transform instanceTransform, List<RhinoObject> pieces, List<Transform> transforms)
+        {
+            for(int i = 0; i < instanceObject.InstanceDefinition.ObjectCount; i++)
+            {
+                RhinoObject rhinoObject = instanceObject.InstanceDefinition.Object(i);
+
+                pieces.Add(rhinoObject);
+
+                if (rhinoObject is InstanceObject nestedObject)
+                {
+                    Transform nestedTransform = instanceTransform * nestedObject.InstanceXform;
+
+                    transforms.Add(nestedTransform);
+
+                    ExplodeRecursive(nestedObject, nestedTransform, pieces, transforms);
+                }
+                else
+                {
+                    transforms.Add(instanceTransform);
+                }
+            }
         }
 
         public static int AddAndReturnIndex<T>(this List<T> list, T item)
