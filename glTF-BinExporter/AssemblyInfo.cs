@@ -14,4 +14,4 @@ using Rhino.PlugIns;
 
 // Rhino requires a Guid assigned to the assembly.
 [assembly: Guid("A398F3EA-975D-4A5D-BBF4-9E43E10843F9")]
-[assembly: AssemblyVersion("1.7.1.0")]
+[assembly: AssemblyVersion("1.7.2.0")]
