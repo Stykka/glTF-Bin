@@ -100,7 +100,7 @@ namespace glTF_BinExporter
                 if(opts.UseBinary)
                 {
                     byte[] bytes = converter.GetBinaryBuffer();
-                    glTFLoader.Interface.SaveBinaryModel(gltf, bytes, fileName);
+                    glTFLoader.Interface.SaveBinaryModel(gltf, bytes.Length == 0 ? null : bytes, fileName);
                 }
                 else
                 {

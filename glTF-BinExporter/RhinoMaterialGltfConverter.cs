@@ -118,7 +118,7 @@ namespace glTF_BinExporter
             RenderTexture baseColorTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.PbrBaseColor);
             RenderTexture alphaTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.PbrAlpha);
 
-            bool baseColorLinear = IsLinear(baseColorTexture);
+            bool baseColorLinear = baseColorTexture == null ? false : IsLinear(baseColorTexture);
 
             bool hasBaseColorTexture = baseColorDoc == null ? false : baseColorDoc.Enabled;
             bool hasAlphaTexture = alphaTextureDoc == null ? false : alphaTextureDoc.Enabled;

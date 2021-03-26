@@ -109,7 +109,7 @@ namespace glTF_BinExporter
                 }
             }
 
-            if(options.UseBinary)
+            if(options.UseBinary && binaryBuffer.Count > 0)
             {
                 //have to add the empty buffer for the binary file header
                 dummy.Buffers.Add(new glTFLoader.Schema.Buffer()
