@@ -205,30 +205,35 @@ namespace glTF_BinExporter
 
                 int normalsAccessorIdx = dummy.Accessors.AddAndReturnIndex(normalsAccessor);
 
-                // Accessor TexCoords
-                var texCoordsAccessor = new Accessor
-                {
-                    Type = Accessor.TypeEnum.VEC2,
-                    ComponentType = Accessor.ComponentTypeEnum.FLOAT,
-                    Count = dracoGeoInfo.texCoordsNum,
-                    Min = dracoGeoInfo.texCoordsMin,
-                    Max = dracoGeoInfo.texCoordsMax,
-                    ByteOffset = 0,
-                };
-                
-                int texCoordsAccessorIdx = dummy.Accessors.AddAndReturnIndex(texCoordsAccessor);
-
                 var primitive = new MeshPrimitive()
                 {
                     Attributes = new Dictionary<string, int>()
                     {
                         { Constants.PositionAttributeTag, vtxAccessorIdx },
                         { Constants.NormalAttributeTag, normalsAccessorIdx },
-                        { Constants.TexCoord0AttributeTag, texCoordsAccessorIdx },
                     },
                     Indices = idsAccessorIdx,
                     Material = materialIndex,
-                    Extensions = new Dictionary<string, object>()
+                };
+
+                if(dracoGeoInfo.texCoordsNum > 0)
+                {
+                    // Accessor TexCoords
+                    var texCoordsAccessor = new Accessor
+                    {
+                        Type = Accessor.TypeEnum.VEC2,
+                        ComponentType = Accessor.ComponentTypeEnum.FLOAT,
+                        Count = dracoGeoInfo.texCoordsNum,
+                        Min = dracoGeoInfo.texCoordsMin,
+                        Max = dracoGeoInfo.texCoordsMax,
+                        ByteOffset = 0,
+                    };
+
+                    int texCoordsAccessorIdx = dummy.Accessors.AddAndReturnIndex(texCoordsAccessor);
+
+                    primitive.Attributes.Add(Constants.TexCoord0AttributeTag, texCoordsAccessorIdx);
+
+                    primitive.Extensions = new Dictionary<string, object>()
                     {
                         {
                             Constants.DracoMeshCompressionExtensionTag,
@@ -243,8 +248,26 @@ namespace glTF_BinExporter
                                 }
                             }
                         }
-                    }
-                };
+                    };
+                }
+                else
+                {
+                    primitive.Extensions = new Dictionary<string, object>()
+                    {
+                        {
+                            Constants.DracoMeshCompressionExtensionTag,
+                            new
+                            {
+                                bufferView = compMeshBufferViewIdx,
+                                attributes = new
+                                {
+                                    POSITION = 0,
+                                    NORMAL = 1,
+                                }
+                            }
+                        }
+                    };
+                }
 
                 // Create mesh
                 primitives.Add(primitive);
@@ -310,10 +333,13 @@ namespace glTF_BinExporter
 
                     // TexCoord Stats
                     dracoGeoInfo.texCoordsNum = mesh.TextureCoordinates.Count;
-                    point2f = mesh.TextureCoordinates.Min();
-                    dracoGeoInfo.texCoordsMin = new float[] { point2f.X, point2f.Y };
-                    point2f = mesh.TextureCoordinates.Max();
-                    dracoGeoInfo.texCoordsMax = new float[] { point2f.X, point2f.Y };
+                    if(dracoGeoInfo.texCoordsNum > 0)
+                    {
+                        point2f = mesh.TextureCoordinates.Min();
+                        dracoGeoInfo.texCoordsMin = new float[] { point2f.X, point2f.Y };
+                        point2f = mesh.TextureCoordinates.Max();
+                        dracoGeoInfo.texCoordsMax = new float[] { point2f.X, point2f.Y };
+                    }
 
                     dracoGeoInfo.success = true;
                 }
@@ -390,11 +416,6 @@ namespace glTF_BinExporter
                 int normalsOffset = (int)binaryBuffer.Count;
                 binaryBuffer.AddRange(normalsBytes);
 
-                byte[] texCoordsBytes = GetTextureCoordinatesBytes(rhinoMesh.TextureCoordinates, out Point2f texCoordsMin, out Point2f texCoordsMax);
-                int texCoordsBytesLength = texCoordsBytes.Length;
-                int texCoordsOffset = (int)binaryBuffer.Count;
-                binaryBuffer.AddRange(texCoordsBytes);
-
                 var vtxBufferView = new BufferView()
                 {
                     Buffer = 0,
@@ -424,16 +445,6 @@ namespace glTF_BinExporter
                 };
 
                 int normalsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(normalsBufferView);
-
-                BufferView texCoordsBufferView = new BufferView()
-                {
-                    Buffer = 0,
-                    ByteOffset = texCoordsOffset,
-                    ByteLength = texCoordsBytesLength,
-                    Target = BufferView.TargetEnum.ARRAY_BUFFER,
-                };
-
-                int texCoordsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(texCoordsBufferView);
 
                 // Create accessors	
                 Accessor vtxAccessor = new Accessor()
@@ -475,30 +486,50 @@ namespace glTF_BinExporter
 
                 int normalsAccessorIdx = dummy.Accessors.AddAndReturnIndex(normalsAccessor);
 
-                Accessor texCoordsAccessor = new Accessor()
-                {
-                    BufferView = texCoordsBufferViewIdx,
-                    Count = rhinoMesh.TextureCoordinates.Count,
-                    Min = new float[] { texCoordsMin.X, texCoordsMin.Y },
-                    Max = new float[] { texCoordsMax.X, texCoordsMax.Y },
-                    Type = Accessor.TypeEnum.VEC2,
-                    ComponentType = Accessor.ComponentTypeEnum.FLOAT,
-                    ByteOffset = 0,
-                };
-
-                int texCoordsAccessorIdx = dummy.Accessors.AddAndReturnIndex(texCoordsAccessor);
-
                 var primitive = new MeshPrimitive()
                 {
                     Attributes = new Dictionary<string, int>()
                     {
                         { Constants.PositionAttributeTag, vtxAccessorIdx },
                         { Constants.NormalAttributeTag, normalsAccessorIdx },
-                        { Constants.TexCoord0AttributeTag, texCoordsAccessorIdx },
                     },
                     Indices = idsAccessorIdx,
                     Material = materialIndex,
                 };
+
+                //Some meshes may not have texture coordinates
+                if(rhinoMesh.TextureCoordinates.Count > 0)
+                {
+                    byte[] texCoordsBytes = GetTextureCoordinatesBytes(rhinoMesh.TextureCoordinates, out Point2f texCoordsMin, out Point2f texCoordsMax);
+                    int texCoordsBytesLength = texCoordsBytes.Length;
+                    int texCoordsOffset = (int)binaryBuffer.Count;
+                    binaryBuffer.AddRange(texCoordsBytes);
+
+                    BufferView texCoordsBufferView = new BufferView()
+                    {
+                        Buffer = 0,
+                        ByteOffset = texCoordsOffset,
+                        ByteLength = texCoordsBytesLength,
+                        Target = BufferView.TargetEnum.ARRAY_BUFFER,
+                    };
+
+                    int texCoordsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(texCoordsBufferView);
+
+                    Accessor texCoordsAccessor = new Accessor()
+                    {
+                        BufferView = texCoordsBufferViewIdx,
+                        Count = rhinoMesh.TextureCoordinates.Count,
+                        Min = new float[] { texCoordsMin.X, texCoordsMin.Y },
+                        Max = new float[] { texCoordsMax.X, texCoordsMax.Y },
+                        Type = Accessor.TypeEnum.VEC2,
+                        ComponentType = Accessor.ComponentTypeEnum.FLOAT,
+                        ByteOffset = 0,
+                    };
+
+                    int texCoordsAccessorIdx = dummy.Accessors.AddAndReturnIndex(texCoordsAccessor);
+
+                    primitive.Attributes.Add(Constants.TexCoord0AttributeTag, texCoordsAccessorIdx);
+                }
 
                 // Create mesh	
                 primitives.Add(primitive);
@@ -545,9 +576,6 @@ namespace glTF_BinExporter
 
                 var normalsBuffer = CreateNormalsBuffer(rhinoMesh.Normals, out Vector3f normalsMin, out Vector3f normalsMax);	
                 int normalsBufferIdx = dummy.Buffers.AddAndReturnIndex(normalsBuffer);
-
-                var texCoordsBuffer = CreateTextureCoordinatesBuffer(rhinoMesh.TextureCoordinates, out Point2f texCoordsMin, out Point2f texCoordsMax);
-                int texCoordsBufferIdx = dummy.Buffers.AddAndReturnIndex(texCoordsBuffer);	
 	
                 var vtxBufferView = new BufferView()
                 {
@@ -578,16 +606,6 @@ namespace glTF_BinExporter
                 };
 
                 int normalsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(normalsBufferView);	
-
-                BufferView texCoordsBufferView = new BufferView()
-                {
-                    Buffer = texCoordsBufferIdx,	
-                    ByteOffset = 0,	
-                    ByteLength = texCoordsBuffer.ByteLength,	
-                    Target = BufferView.TargetEnum.ARRAY_BUFFER,
-                };
-
-                int texCoordsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(texCoordsBufferView);
 
                 // Create accessors	
                 Accessor vtxAccessor = new Accessor()	
@@ -627,20 +645,7 @@ namespace glTF_BinExporter
                     ByteOffset = 0,
                 };
 
-                int normalsAccessorIdx = dummy.Accessors.AddAndReturnIndex(normalsAccessor);
-
-                Accessor texCoordsAccessor = new Accessor()	
-                {	
-                    BufferView = texCoordsBufferViewIdx,	
-                    Count = rhinoMesh.TextureCoordinates.Count,
-                    Min = new float[] { texCoordsMin.X, texCoordsMin.Y },	
-                    Max = new float[] { texCoordsMax.X, texCoordsMax.Y },
-                    Type = Accessor.TypeEnum.VEC2,
-                    ComponentType = Accessor.ComponentTypeEnum.FLOAT,
-                    ByteOffset = 0,
-                };
-
-                int texCoordsAccessorIdx = dummy.Accessors.AddAndReturnIndex(texCoordsAccessor);	
+                int normalsAccessorIdx = dummy.Accessors.AddAndReturnIndex(normalsAccessor);	
 
                 var primitive = new MeshPrimitive()
                 {
@@ -648,11 +653,41 @@ namespace glTF_BinExporter
                     {
                         { Constants.PositionAttributeTag, vtxAccessorIdx },
                         { Constants.NormalAttributeTag, normalsAccessorIdx },
-                        { Constants.TexCoord0AttributeTag, texCoordsAccessorIdx },
                     },
                     Indices = idsAccessorIdx,
                     Material = materialIndex,
                 };
+
+                if(rhinoMesh.TextureCoordinates.Count > 0)
+                {
+                    var texCoordsBuffer = CreateTextureCoordinatesBuffer(rhinoMesh.TextureCoordinates, out Point2f texCoordsMin, out Point2f texCoordsMax);
+                    int texCoordsBufferIdx = dummy.Buffers.AddAndReturnIndex(texCoordsBuffer);
+
+                    BufferView texCoordsBufferView = new BufferView()
+                    {
+                        Buffer = texCoordsBufferIdx,
+                        ByteOffset = 0,
+                        ByteLength = texCoordsBuffer.ByteLength,
+                        Target = BufferView.TargetEnum.ARRAY_BUFFER,
+                    };
+
+                    int texCoordsBufferViewIdx = dummy.BufferViews.AddAndReturnIndex(texCoordsBufferView);
+
+                    Accessor texCoordsAccessor = new Accessor()
+                    {
+                        BufferView = texCoordsBufferViewIdx,
+                        Count = rhinoMesh.TextureCoordinates.Count,
+                        Min = new float[] { texCoordsMin.X, texCoordsMin.Y },
+                        Max = new float[] { texCoordsMax.X, texCoordsMax.Y },
+                        Type = Accessor.TypeEnum.VEC2,
+                        ComponentType = Accessor.ComponentTypeEnum.FLOAT,
+                        ByteOffset = 0,
+                    };
+
+                    int texCoordsAccessorIdx = dummy.Accessors.AddAndReturnIndex(texCoordsAccessor);
+
+                    primitive.Attributes.Add(Constants.TexCoord0AttributeTag, texCoordsAccessorIdx);
+                }
 
                 // Create mesh	
                 primitives.Add(primitive);	
