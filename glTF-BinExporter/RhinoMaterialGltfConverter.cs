@@ -143,21 +143,12 @@ namespace glTF_BinExporter
 
             if (!hasBaseColorTexture && !hasAlphaTexture)
             {
-                float alpha = 1.0f;
-
-                if (baseColorDiffuseAlphaForTransparency)
-                {
-                    alpha = rhinoMaterial.PhysicallyBased.BaseColor.A;
-                }
-
-                alpha *= (float)rhinoMaterial.PhysicallyBased.Alpha;
-
                 gltfMaterial.PbrMetallicRoughness.BaseColorFactor = new float[]
                 {
                     baseColor.R,
                     baseColor.G,
                     baseColor.B,
-                    alpha,
+                    (float)rhinoMaterial.PhysicallyBased.Alpha,
                 };
             }
             else
