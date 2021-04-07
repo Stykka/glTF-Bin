@@ -9,6 +9,9 @@ namespace glTF_BinExporter
 {
     class ExportOptionsDialog : Dialog<glTFExportOptions>
     {
+        private const int DefaultPadding = 5;
+        private static readonly Eto.Drawing.Size DefaultSpacing = new Eto.Drawing.Size(2, 2);
+
         private CheckBox useDracoCompressionCheck = new CheckBox();
 
         private Label dracoCompressionLabel = new Label();
@@ -29,6 +32,9 @@ namespace glTF_BinExporter
         public ExportOptionsDialog(glTFExportOptions options)
         {
             this.options = options;
+            Resizable = false;
+
+            Title = "glTF Export Options";
 
             useDracoCompressionCheck.Text = "Use Draco Compression";
             
@@ -61,8 +67,8 @@ namespace glTF_BinExporter
             var gBox = new GroupBox() { Text = "Draco Quantization Bits" };
             gBox.Content = new TableLayout()
             {
-                Padding = 5,
-                Spacing = new Eto.Drawing.Size(2, 2),
+                Padding = DefaultPadding,
+                Spacing = DefaultSpacing,
                 Rows = {
                     new TableRow("Position", "Normal", "Texture"),
                     new TableRow(dracoQuantizationBitsInputPosition, dracoQuantizationBitsInputNormal, dracoQuantizationBitsInputTexture)
@@ -71,15 +77,58 @@ namespace glTF_BinExporter
 
             var layout = new DynamicLayout()
             {
-                Padding = 5,
-                Spacing = new Eto.Drawing.Size(2, 2)
+                Padding = DefaultPadding,
+                Spacing = DefaultSpacing,
             };
-            layout.AddRow(mapZtoY, null);
+
             layout.AddSeparateRow(useDracoCompressionCheck, null);
             layout.AddSeparateRow(dracoCompressionLabel, dracoCompressionLevelInput, null);
             layout.AddSeparateRow(gBox, null);
-            layout.AddSeparateRow(null, cancelButton, okButton);
-            this.Content = layout;
+
+            TabControl tabControl = new TabControl();
+
+            TabPage formattingPage = new TabPage()
+            {
+                Text = "Formatting",
+                Content = new TableLayout()
+                {
+                    Padding = DefaultPadding,
+                    Spacing = DefaultSpacing,
+                    Rows =
+                    {
+                        new TableRow(mapZtoY),
+                    },
+                },
+            };
+
+            TabPage compressionPage = new TabPage()
+            {
+                Text = "Compression",
+                Content = layout,
+            };
+
+            tabControl.Pages.Add(formattingPage);
+            tabControl.Pages.Add(compressionPage);
+
+            this.Content = new TableLayout()
+            {
+                Padding = DefaultPadding,
+                Spacing = DefaultSpacing,
+                Rows =
+                {
+                    new TableRow(tabControl),
+                    null,
+                    new TableRow(new TableLayout()
+                    {
+                        Padding = DefaultPadding,
+                        Spacing = DefaultSpacing,
+                        Rows =
+                        {
+                            new TableRow(cancelButton, okButton),
+                        }
+                    }),
+                }
+            };
         }
 
         private void MapZtoY_CheckedChanged(object sender, EventArgs e)
