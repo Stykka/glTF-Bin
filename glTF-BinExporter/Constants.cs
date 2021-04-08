@@ -4,7 +4,7 @@ namespace glTF_BinExporter
 {
     public static class Constants
     {
-        public static ObjectType[] ValidObjectTypes = new ObjectType[] {
+        public static readonly ObjectType[] ValidObjectTypes = new ObjectType[] {
             ObjectType.Brep,
             ObjectType.InstanceReference,
             ObjectType.Mesh,
@@ -13,7 +13,7 @@ namespace glTF_BinExporter
             ObjectType.SubD
         };
 
-        public static byte[][] Paddings = new byte[][]
+        public static readonly byte[][] Paddings = new byte[][]
         {
             new byte[] { },
             new byte[] { 0, 0, 0 },
