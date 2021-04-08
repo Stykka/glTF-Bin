@@ -7,7 +7,7 @@ using Eto.Forms;
 
 namespace glTF_BinExporter
 {
-    class ExportOptionsDialog : Dialog<glTFExportOptions>
+    class ExportOptionsDialog : Dialog<DialogResult>
     {
         private const int DefaultPadding = 5;
         private static readonly Eto.Drawing.Size DefaultSpacing = new Eto.Drawing.Size(2, 2);
@@ -27,11 +27,8 @@ namespace glTF_BinExporter
 
         private CheckBox mapZtoY = new CheckBox();
 
-        private glTFExportOptions options = null;
-
-        public ExportOptionsDialog(glTFExportOptions options)
+        public ExportOptionsDialog()
         {
-            this.options = options;
             Resizable = false;
 
             Title = "glTF Export Options";
@@ -54,12 +51,6 @@ namespace glTF_BinExporter
             OptionsToDialog();
 
             useDracoCompressionCheck.CheckedChanged += UseDracoCompressionCheck_CheckedChanged;
-            dracoCompressionLevelInput.ValueChanged += DracoCompressionLevelInput_ValueChanged;
-            dracoQuantizationBitsInputPosition.ValueChanged += DracoQuantizationBitsInputPosition_ValueChanged;
-            dracoQuantizationBitsInputNormal.ValueChanged += DracoQuantizationBitsInputNormal_ValueChanged;
-            dracoQuantizationBitsInputTexture.ValueChanged += DracoQuantizationBitsInputTexture_ValueChanged;
-
-            mapZtoY.CheckedChanged += MapZtoY_CheckedChanged;
 
             cancelButton.Click += CancelButton_Click;
             okButton.Click += OkButton_Click;
@@ -131,24 +122,39 @@ namespace glTF_BinExporter
             };
         }
 
-        private void MapZtoY_CheckedChanged(object sender, EventArgs e)
-        {
-            options.MapRhinoZToGltfY = mapZtoY.Checked.HasValue ? mapZtoY.Checked.Value : false;
-        }
-
         private void OptionsToDialog()
         {
-            useDracoCompressionCheck.Checked = options.UseDracoCompression;
+            useDracoCompressionCheck.Checked = glTFBinExporterPlugin.UseDracoCompression;
 
-            EnableDisableDracoControls(options.UseDracoCompression);
+            EnableDisableDracoControls(glTFBinExporterPlugin.UseDracoCompression);
 
-            dracoCompressionLevelInput.Value = options.DracoCompressionLevel;
+            dracoCompressionLevelInput.Value = glTFBinExporterPlugin.DracoCompressionLevel;
 
-            mapZtoY.Checked = options.MapRhinoZToGltfY;
+            mapZtoY.Checked = glTFBinExporterPlugin.MapRhinoZToGltfY;
 
-            dracoQuantizationBitsInputPosition.Value = options.DracoQuantizationBitsPosition;
-            dracoQuantizationBitsInputNormal.Value = options.DracoQuantizationBitsNormal;
-            dracoQuantizationBitsInputTexture.Value = options.DracoQuantizationBitsTexture;
+            dracoQuantizationBitsInputPosition.Value = glTFBinExporterPlugin.DracoQuantizationBitsPosition;
+            dracoQuantizationBitsInputNormal.Value = glTFBinExporterPlugin.DracoQuantizationBitsNormal;
+            dracoQuantizationBitsInputTexture.Value = glTFBinExporterPlugin.DracoQuantizationBitsTexture;
+        }
+
+        private void DialogToOptions()
+        {
+            glTFBinExporterPlugin.UseDracoCompression = GetCheckboxValue(useDracoCompressionCheck);
+
+            glTFBinExporterPlugin.DracoCompressionLevel = (int)dracoCompressionLevelInput.Value;
+
+            glTFBinExporterPlugin.MapRhinoZToGltfY = GetCheckboxValue(mapZtoY);
+
+            glTFBinExporterPlugin.DracoQuantizationBitsPosition = (int)dracoQuantizationBitsInputPosition.Value;
+
+            glTFBinExporterPlugin.DracoQuantizationBitsNormal = (int)dracoQuantizationBitsInputNormal.Value;
+
+            glTFBinExporterPlugin.DracoQuantizationBitsTexture = (int)dracoQuantizationBitsInputTexture.Value;
+        }
+
+        private bool GetCheckboxValue(CheckBox checkBox)
+        {
+            return checkBox.Checked.HasValue ? checkBox.Checked.Value : false;
         }
 
         private void EnableDisableDracoControls(bool enable)
@@ -161,50 +167,21 @@ namespace glTF_BinExporter
 
         private void UseDracoCompressionCheck_CheckedChanged(object sender, EventArgs e)
         {
-            bool useDraco = useDracoCompressionCheck.Checked.HasValue ? useDracoCompressionCheck.Checked.Value : false;
-
-            options.UseDracoCompression = useDraco;
+            bool useDraco = GetCheckboxValue(useDracoCompressionCheck);
 
             EnableDisableDracoControls(useDraco);
         }
 
-        private void DracoCompressionLevelInput_ValueChanged(object sender, EventArgs e)
-        {
-            int level = (int)dracoCompressionLevelInput.Value;
-
-            options.DracoCompressionLevel = level;
-        }
-
-        private void DracoQuantizationBitsInputPosition_ValueChanged(object sender, EventArgs e)
-        {
-            int bits = (int)dracoQuantizationBitsInputPosition.Value;
-
-            options.DracoQuantizationBitsPosition = bits;
-        }
-
-        private void DracoQuantizationBitsInputNormal_ValueChanged(object sender, EventArgs e)
-        {
-            int bits = (int)dracoQuantizationBitsInputNormal.Value;
-
-            options.DracoQuantizationBitsNormal = bits;
-        }
-
-        private void DracoQuantizationBitsInputTexture_ValueChanged(object sender, EventArgs e)
-        {
-            int bits = (int)dracoQuantizationBitsInputTexture.Value;
-
-            options.DracoQuantizationBitsTexture = bits;
-        }
-
         private void CancelButton_Click(object sender, EventArgs e)
         {
-            this.Close(null);
+            this.Close(DialogResult.Cancel);
         }
 
         private void OkButton_Click(object sender, EventArgs e)
         {
-            this.Close(options);
-        }
+            DialogToOptions();
 
+            this.Close(DialogResult.Ok);
+        }
     }
 }

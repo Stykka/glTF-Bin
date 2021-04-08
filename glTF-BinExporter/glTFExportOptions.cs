@@ -8,12 +8,11 @@ namespace glTF_BinExporter
 {
     public class glTFExportOptions
     {
-        public bool UseDracoCompression = false;
-        public bool UseBinary = true;
-        public bool MapRhinoZToGltfY = true;
-        public int DracoCompressionLevel = 10;
-        public int DracoQuantizationBitsPosition = 11;
-        public int DracoQuantizationBitsNormal = 8;
-        public int DracoQuantizationBitsTexture = 10;
+        public bool MapRhinoZToGltfY = glTFBinExporterPlugin.MapRhinoZToGltfYDefault;
+        public bool UseDracoCompression = glTFBinExporterPlugin.UseDracoCompressionDefault;
+        public int DracoCompressionLevel = glTFBinExporterPlugin.DracoCompressionLevelDefault;
+        public int DracoQuantizationBitsPosition = glTFBinExporterPlugin.DracoQuantizationBitsPositionDefault;
+        public int DracoQuantizationBitsNormal = glTFBinExporterPlugin.DracoQuantizationBitsNormalDefault;
+        public int DracoQuantizationBitsTexture = glTFBinExporterPlugin.DracoQuantizationBitsTextureDefault;
     }
 }

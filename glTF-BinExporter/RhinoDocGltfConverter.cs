@@ -17,21 +17,25 @@ namespace glTF_BinExporter
 {
     class RhinoDocGltfConverter
     {
-        public RhinoDocGltfConverter(glTFExportOptions options, IEnumerable<RhinoObject> objects, LinearWorkflow workflow)
+        public RhinoDocGltfConverter(glTFExportOptions options, bool binary, IEnumerable<RhinoObject> objects, LinearWorkflow workflow)
         {
             this.options = options;
+            this.binary = binary;
             this.objects = objects;
             this.workflow = workflow;
         }
 
-        public RhinoDocGltfConverter(glTFExportOptions options, RhinoDoc doc, LinearWorkflow workflow)
+        public RhinoDocGltfConverter(glTFExportOptions options, bool binary, RhinoDoc doc, LinearWorkflow workflow)
         {
             this.options = options;
+            this.binary = binary;
             this.objects = doc.Objects;
             this.workflow = null;
         }
 
         private IEnumerable<RhinoObject> objects = null;
+
+        private bool binary = false;
         private glTFExportOptions options = null;
         private LinearWorkflow workflow = null;
 
@@ -98,7 +102,7 @@ namespace glTF_BinExporter
                 }
                 else
                 {
-                    if (options.UseBinary)
+                    if (binary)
                     {
                         AddRhinoObjectBinary(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4);
                     }
@@ -109,7 +113,7 @@ namespace glTF_BinExporter
                 }
             }
 
-            if(options.UseBinary && binaryBuffer.Count > 0)
+            if(binary && binaryBuffer.Count > 0)
             {
                 //have to add the empty buffer for the binary file header
                 dummy.Buffers.Add(new glTFLoader.Schema.Buffer()
@@ -367,7 +371,7 @@ namespace glTF_BinExporter
 
         public void WriteDracoBytes(byte[] bytes, out int bufferIndex, out int byteOffset)
         {
-            if(options.UseBinary)
+            if(binary)
             {
                 byteOffset = (int)binaryBuffer.Count;
                 binaryBuffer.AddRange(bytes);
@@ -869,7 +873,7 @@ namespace glTF_BinExporter
         {
             if(!materialsMap.TryGetValue(materialId, out int materialIndex))
             {
-                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, dummy, binaryBuffer, material, workflow);
+                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
                 materialIndex = materialConverter.AddMaterial();
                 materialsMap.Add(materialId, materialIndex);
             }
