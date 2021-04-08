@@ -9,6 +9,7 @@ namespace glTF_BinExporter
     public class glTFExportOptions
     {
         public bool MapRhinoZToGltfY = glTFBinExporterPlugin.MapRhinoZToGltfYDefault;
+        public bool ExportMaterials = glTFBinExporterPlugin.ExportMaterialsDefault;
         public bool UseDracoCompression = glTFBinExporterPlugin.UseDracoCompressionDefault;
         public int DracoCompressionLevel = glTFBinExporterPlugin.DracoCompressionLevelDefault;
         public int DracoQuantizationBitsPosition = glTFBinExporterPlugin.DracoQuantizationBitsPositionDefault;

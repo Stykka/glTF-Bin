@@ -26,6 +26,7 @@ namespace glTF_BinExporter
         private Button okButton = new Button();
 
         private CheckBox mapZtoY = new CheckBox();
+        private CheckBox exportMaterials = new CheckBox();
 
         public ExportOptionsDialog()
         {
@@ -47,6 +48,8 @@ namespace glTF_BinExporter
             okButton.Text = "Ok";
 
             mapZtoY.Text = "Map Rhino Z to glTF Y";
+
+            exportMaterials.Text = "Export Materials";
 
             OptionsToDialog();
 
@@ -88,6 +91,7 @@ namespace glTF_BinExporter
                     Rows =
                     {
                         new TableRow(mapZtoY),
+                        new TableRow(exportMaterials),
                     },
                 },
             };
@@ -132,6 +136,8 @@ namespace glTF_BinExporter
 
             mapZtoY.Checked = glTFBinExporterPlugin.MapRhinoZToGltfY;
 
+            exportMaterials.Checked = glTFBinExporterPlugin.ExportMaterials;
+
             dracoQuantizationBitsInputPosition.Value = glTFBinExporterPlugin.DracoQuantizationBitsPosition;
             dracoQuantizationBitsInputNormal.Value = glTFBinExporterPlugin.DracoQuantizationBitsNormal;
             dracoQuantizationBitsInputTexture.Value = glTFBinExporterPlugin.DracoQuantizationBitsTexture;
@@ -140,15 +146,11 @@ namespace glTF_BinExporter
         private void DialogToOptions()
         {
             glTFBinExporterPlugin.UseDracoCompression = GetCheckboxValue(useDracoCompressionCheck);
-
             glTFBinExporterPlugin.DracoCompressionLevel = (int)dracoCompressionLevelInput.Value;
-
             glTFBinExporterPlugin.MapRhinoZToGltfY = GetCheckboxValue(mapZtoY);
-
+            glTFBinExporterPlugin.ExportMaterials = GetCheckboxValue(exportMaterials);
             glTFBinExporterPlugin.DracoQuantizationBitsPosition = (int)dracoQuantizationBitsInputPosition.Value;
-
             glTFBinExporterPlugin.DracoQuantizationBitsNormal = (int)dracoQuantizationBitsInputNormal.Value;
-
             glTFBinExporterPlugin.DracoQuantizationBitsTexture = (int)dracoQuantizationBitsInputTexture.Value;
         }
 

@@ -133,7 +133,7 @@ namespace glTF_BinExporter
 
         private void AddRhinoObjectDraco(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid materialId, RhinoObject rhinoObject)
         {
-            int materialIndex = GetMaterial(material, materialId);
+            var materialIndex = GetMaterial(material, materialId);
 
             var primitives = new List<MeshPrimitive>();
 
@@ -391,7 +391,7 @@ namespace glTF_BinExporter
 
         private void AddRhinoObjectBinary(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid materialId, RhinoObject rhinoObject)
         {
-            int materialIndex = GetMaterial(material, materialId);
+            var materialIndex = GetMaterial(material, materialId);
 
             var primitives = new List<MeshPrimitive>();
 
@@ -558,7 +558,7 @@ namespace glTF_BinExporter
 
         private void AddRhinoObjectText(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid materialId, RhinoObject rhinoObject)
         {
-            int materialIndex = GetMaterial(material, materialId);
+            var materialIndex = GetMaterial(material, materialId);
 
             var primitives = new List<MeshPrimitive>();	
 
@@ -869,8 +869,13 @@ namespace glTF_BinExporter
             return bytesEnumerable.ToArray();
         }
 
-        int GetMaterial(Rhino.DocObjects.Material material, Guid materialId)
+        int? GetMaterial(Rhino.DocObjects.Material material, Guid materialId)
         {
+            if(!options.ExportMaterials)
+            {
+                return null;
+            }
+
             if(!materialsMap.TryGetValue(materialId, out int materialIndex))
             {
                 RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
