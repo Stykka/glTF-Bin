@@ -66,6 +66,19 @@ namespace glTF_BinExporter
                     return false;
                 }
 
+                if(Rhino.Input.RhinoGet.GetBool("Export Materials", true, "No", "Yes", ref options.ExportMaterials) != Result.Success)
+                {
+                    return false;
+                }
+
+                if(options.ExportMaterials)
+                {
+                    if(Rhino.Input.RhinoGet.GetBool("Use display color for objects with unset material", true, "No", "Yes", ref options.UseDisplayColorForUnsetMaterials) != Result.Success)
+                    {
+                        return false;
+                    }
+                }
+
                 if (options.UseDracoCompression)
                 {
                     if(Rhino.Input.RhinoGet.GetInteger("Draco Compression Level (max=10)", true, ref options.DracoCompressionLevel, 1, 10) != Result.Success)
