@@ -10,6 +10,14 @@ using Rhino.Render;
 
 namespace glTF_BinExporter
 {
+
+    public struct ObjectExportData
+    {
+        public Mesh[] Meshes;
+        public RenderMaterial RenderMaterial;
+        public RhinoObject Object;
+    }
+
     /// <summary>
     /// Functions for helping with adding RhinoObjects to the RootModel.
     /// </summary>
@@ -88,9 +96,9 @@ namespace glTF_BinExporter
         /// </summary>
         /// <param name="rhinoObjects"></param>
         /// <returns></returns>
-        public static List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
+        public static List<ObjectExportData> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
         {
-            var rhinoObjectsRes = new List<Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>>();
+            var rhinoObjectsRes = new List<ObjectExportData>();
 
             foreach (var rhinoObject in rhinoObjects)
             {
@@ -101,9 +109,7 @@ namespace glTF_BinExporter
                 }
                 
                 // FIXME: This is broken. Even though objects use the same material, different Materials are returned here.
-                var mat = rhinoObject.GetMaterial(true);
-                var renderMatId = mat.Id;
-                bool isPBR = mat.IsPhysicallyBased;
+                var mat = rhinoObject.RenderMaterial;
 
                 // This is always true when called from the Main plugin command, as it uses the same ObjectType array as filter.
                 // Keeping it around in case someone calls this from somewhere else.
@@ -115,7 +121,12 @@ namespace glTF_BinExporter
 
                     if(meshes.Length > 0) //Objects need a mesh to export
                     {
-                        rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(meshes, mat, renderMatId, rhinoObject));
+                        rhinoObjectsRes.Add(new ObjectExportData()
+                        {
+                            Meshes = meshes,
+                            RenderMaterial = mat,
+                            Object = rhinoObject,
+                        });
                     }
                 }
                 else if (rhinoObject.ObjectType == ObjectType.InstanceReference)
@@ -139,7 +150,12 @@ namespace glTF_BinExporter
                         
                         if(meshes.Length > 0) //Objects need a mesh to export
                         {
-                            rhinoObjectsRes.Add(new Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject>(meshes, mat, renderMatId, item.rhinoObject));
+                            rhinoObjectsRes.Add(new ObjectExportData()
+                            {
+                                Meshes = meshes,
+                                RenderMaterial = mat,
+                                Object = item.rhinoObject,
+                            });
                         }
                     }
                 }
@@ -184,6 +200,17 @@ namespace glTF_BinExporter
             string extension = Path.GetExtension(filename);
 
             return extension.ToLower() == ".glb";
+        }
+
+        public static float[] ToFloatArray(this Rhino.Display.Color4f color)
+        {
+            return new float[]
+            {
+                color.R,
+                color.G,
+                color.B,
+                color.A,
+            };
         }
 
     }

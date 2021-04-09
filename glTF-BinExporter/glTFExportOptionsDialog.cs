@@ -27,6 +27,7 @@ namespace glTF_BinExporter
 
         private CheckBox mapZtoY = new CheckBox();
         private CheckBox exportMaterials = new CheckBox();
+        private CheckBox useDisplayColorForUnsetMaterial = new CheckBox();
 
         public ExportOptionsDialog()
         {
@@ -50,10 +51,12 @@ namespace glTF_BinExporter
             mapZtoY.Text = "Map Rhino Z to glTF Y";
 
             exportMaterials.Text = "Export Materials";
+            useDisplayColorForUnsetMaterial.Text = "Use display color for objects with no material set";
 
             OptionsToDialog();
 
             useDracoCompressionCheck.CheckedChanged += UseDracoCompressionCheck_CheckedChanged;
+            exportMaterials.CheckedChanged += ExportMaterials_CheckedChanged;
 
             cancelButton.Click += CancelButton_Click;
             okButton.Click += OkButton_Click;
@@ -92,6 +95,7 @@ namespace glTF_BinExporter
                     {
                         new TableRow(mapZtoY),
                         new TableRow(exportMaterials),
+                        new TableRow(useDisplayColorForUnsetMaterial),
                     },
                 },
             };
@@ -128,16 +132,16 @@ namespace glTF_BinExporter
 
         private void OptionsToDialog()
         {
-            useDracoCompressionCheck.Checked = glTFBinExporterPlugin.UseDracoCompression;
+            mapZtoY.Checked = glTFBinExporterPlugin.MapRhinoZToGltfY;
+            exportMaterials.Checked = glTFBinExporterPlugin.ExportMaterials;
+            EnableDisableMaterialControls(glTFBinExporterPlugin.ExportMaterials);
 
+            useDisplayColorForUnsetMaterial.Checked = glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials;
+
+            useDracoCompressionCheck.Checked = glTFBinExporterPlugin.UseDracoCompression;
             EnableDisableDracoControls(glTFBinExporterPlugin.UseDracoCompression);
 
             dracoCompressionLevelInput.Value = glTFBinExporterPlugin.DracoCompressionLevel;
-
-            mapZtoY.Checked = glTFBinExporterPlugin.MapRhinoZToGltfY;
-
-            exportMaterials.Checked = glTFBinExporterPlugin.ExportMaterials;
-
             dracoQuantizationBitsInputPosition.Value = glTFBinExporterPlugin.DracoQuantizationBitsPosition;
             dracoQuantizationBitsInputNormal.Value = glTFBinExporterPlugin.DracoQuantizationBitsNormal;
             dracoQuantizationBitsInputTexture.Value = glTFBinExporterPlugin.DracoQuantizationBitsTexture;
@@ -145,10 +149,12 @@ namespace glTF_BinExporter
 
         private void DialogToOptions()
         {
-            glTFBinExporterPlugin.UseDracoCompression = GetCheckboxValue(useDracoCompressionCheck);
-            glTFBinExporterPlugin.DracoCompressionLevel = (int)dracoCompressionLevelInput.Value;
             glTFBinExporterPlugin.MapRhinoZToGltfY = GetCheckboxValue(mapZtoY);
             glTFBinExporterPlugin.ExportMaterials = GetCheckboxValue(exportMaterials);
+            glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials = GetCheckboxValue(useDisplayColorForUnsetMaterial);
+
+            glTFBinExporterPlugin.UseDracoCompression = GetCheckboxValue(useDracoCompressionCheck);
+            glTFBinExporterPlugin.DracoCompressionLevel = (int)dracoCompressionLevelInput.Value;
             glTFBinExporterPlugin.DracoQuantizationBitsPosition = (int)dracoQuantizationBitsInputPosition.Value;
             glTFBinExporterPlugin.DracoQuantizationBitsNormal = (int)dracoQuantizationBitsInputNormal.Value;
             glTFBinExporterPlugin.DracoQuantizationBitsTexture = (int)dracoQuantizationBitsInputTexture.Value;
@@ -172,6 +178,18 @@ namespace glTF_BinExporter
             bool useDraco = GetCheckboxValue(useDracoCompressionCheck);
 
             EnableDisableDracoControls(useDraco);
+        }
+
+        private void ExportMaterials_CheckedChanged(object sender, EventArgs e)
+        {
+            bool enabled = GetCheckboxValue(exportMaterials);
+
+            EnableDisableMaterialControls(enabled);
+        }
+
+        private void EnableDisableMaterialControls(bool enabled)
+        {
+            useDisplayColorForUnsetMaterial.Enabled = enabled;
         }
 
         private void CancelButton_Click(object sender, EventArgs e)

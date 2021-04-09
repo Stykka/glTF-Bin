@@ -97,6 +97,15 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(exportMaterialsKey, value);
         }
 
+        private const string useDisplayColorForUnsetMaterialsKey = "UseDisplayColorForUnsetMaterials";
+        public const bool UseDisplayColorForUnsetMaterialsDefault = true;
+
+        public static bool UseDisplayColorForUnsetMaterials
+        {
+            get => Instance.Settings.GetBool(useDisplayColorForUnsetMaterialsKey, UseDisplayColorForUnsetMaterialsDefault);
+            set => Instance.Settings.SetBool(useDisplayColorForUnsetMaterialsKey, value);
+        }
+
         private const string dracoCompressionLevelKey = "DracoCompressionLevel";
         public const int DracoCompressionLevelDefault = 10;
         
@@ -139,6 +148,7 @@ namespace glTF_BinExporter
             {
                 MapRhinoZToGltfY = MapRhinoZToGltfY,
                 ExportMaterials = ExportMaterials,
+                UseDisplayColorForUnsetMaterials = UseDisplayColorForUnsetMaterials,
                 UseDracoCompression = UseDracoCompression,
                 DracoCompressionLevel = DracoCompressionLevel,
                 DracoQuantizationBitsPosition = DracoQuantizationBitsPosition,
