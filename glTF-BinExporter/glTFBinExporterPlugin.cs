@@ -106,6 +106,33 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(useDisplayColorForUnsetMaterialsKey, value);
         }
 
+        public const string ExportTextureCoordinatesKey = "ExportTextureCoordinates";
+        public const bool ExportTextureCoordinatesDefault = true;
+
+        public static bool ExportTextureCoordinates
+        {
+            get => Instance.Settings.GetBool(ExportTextureCoordinatesKey, ExportTextureCoordinatesDefault);
+            set => Instance.Settings.SetBool(ExportTextureCoordinatesKey, value);
+        }
+
+        public const string ExportVertexNormalsKey = "ExportVertexNormals";
+        public const bool ExportVertexNormalsDefault = true;
+
+        public static bool ExportVertexNormals
+        {
+            get => Instance.Settings.GetBool(ExportVertexNormalsKey, ExportVertexNormalsDefault);
+            set => Instance.Settings.SetBool(ExportVertexNormalsKey, value);
+        }
+
+        public const string ExportVertexColorsKey = "ExportVertexColors";
+        public const bool ExportVertexColorsDefault = false;
+
+        public static bool ExportVertexColors
+        {
+            get => Instance.Settings.GetBool(ExportVertexColorsKey, ExportVertexColorsDefault);
+            set => Instance.Settings.SetBool(ExportVertexColorsKey, value);
+        }
+
         private const string dracoCompressionLevelKey = "DracoCompressionLevel";
         public const int DracoCompressionLevelDefault = 10;
         
@@ -149,6 +176,11 @@ namespace glTF_BinExporter
                 MapRhinoZToGltfY = MapRhinoZToGltfY,
                 ExportMaterials = ExportMaterials,
                 UseDisplayColorForUnsetMaterials = UseDisplayColorForUnsetMaterials,
+
+                ExportTextureCoordinates = ExportTextureCoordinates,
+                ExportVertexNormals = ExportVertexNormals,
+                ExportVertexColors = ExportVertexColors,
+
                 UseDracoCompression = UseDracoCompression,
                 DracoCompressionLevel = DracoCompressionLevel,
                 DracoQuantizationBitsPosition = DracoQuantizationBitsPosition,

@@ -213,5 +213,33 @@ namespace glTF_BinExporter
             };
         }
 
+        public static float[] ToFloatArray(this Point3d point)
+        {
+            return new float[]
+            {
+                (float)point.X,
+                (float)point.Y,
+                (float)point.Z,
+            };
+        }
+
+        public static float[] ToFloatArray(this Vector3f vector)
+        {
+            return new float[]
+            {
+                vector.X,
+                vector.Y,
+                vector.Z,
+            };
+        }
+
+        public static float[] ToFloatArray(this Point2f point)
+        {
+            return new float[]
+            {
+                point.X,
+                point.Y,
+            };
+        }
     }
 }
