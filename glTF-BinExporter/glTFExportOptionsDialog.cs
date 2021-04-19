@@ -12,6 +12,14 @@ namespace glTF_BinExporter
         private const int DefaultPadding = 5;
         private static readonly Eto.Drawing.Size DefaultSpacing = new Eto.Drawing.Size(2, 2);
 
+        private CheckBox mapZtoY = new CheckBox();
+        private CheckBox exportMaterials = new CheckBox();
+        private CheckBox useDisplayColorForUnsetMaterial = new CheckBox();
+
+        private CheckBox exportTextureCoordinates = new CheckBox();
+        private CheckBox exportVertexNormals = new CheckBox();
+        private CheckBox exportVertexColors = new CheckBox();
+
         private CheckBox useDracoCompressionCheck = new CheckBox();
 
         private Label dracoCompressionLabel = new Label();
@@ -25,19 +33,27 @@ namespace glTF_BinExporter
         private Button cancelButton = new Button();
         private Button okButton = new Button();
 
-        private CheckBox mapZtoY = new CheckBox();
-        private CheckBox exportMaterials = new CheckBox();
-        private CheckBox useDisplayColorForUnsetMaterial = new CheckBox();
-
         public ExportOptionsDialog()
         {
             Resizable = false;
 
             Title = "glTF Export Options";
 
-            useDracoCompressionCheck.Text = "Use Draco Compression";
-            
-            dracoCompressionLabel.Text = "Draco Compression Level";
+            mapZtoY.Text = "Map Rhino Z to glTF Y";
+
+            exportMaterials.Text = "Export materials";
+
+            useDisplayColorForUnsetMaterial.Text = "Use display color for objects with no material set";
+
+            exportTextureCoordinates.Text = "Export texture coordinates";
+
+            exportVertexNormals.Text = "Export vertex normals";
+
+            exportVertexColors.Text = "Export vertex colors";
+
+            useDracoCompressionCheck.Text = "Use Draco compression";
+
+            dracoCompressionLabel.Text = "Draco compression Level";
             dracoCompressionLevelInput.DecimalPlaces = 0;
             dracoCompressionLevelInput.MinValue = 1;
             dracoCompressionLevelInput.MaxValue = 10;
@@ -47,11 +63,6 @@ namespace glTF_BinExporter
             cancelButton.Text = "Cancel";
 
             okButton.Text = "Ok";
-
-            mapZtoY.Text = "Map Rhino Z to glTF Y";
-
-            exportMaterials.Text = "Export Materials";
-            useDisplayColorForUnsetMaterial.Text = "Use display color for objects with no material set";
 
             OptionsToDialog();
 
@@ -100,13 +111,32 @@ namespace glTF_BinExporter
                 },
             };
 
+            tabControl.Pages.Add(formattingPage);
+
+            TabPage meshPage = new TabPage()
+            {
+                Text = "Mesh",
+                Content = new TableLayout()
+                {
+                    Padding = DefaultPadding,
+                    Spacing = DefaultSpacing,
+                    Rows =
+                    {
+                        new TableRow(exportTextureCoordinates),
+                        new TableRow(exportVertexNormals),
+                        new TableRow(exportVertexColors),
+                    },
+                },
+            };
+
+            tabControl.Pages.Add(meshPage);
+
             TabPage compressionPage = new TabPage()
             {
                 Text = "Compression",
                 Content = layout,
             };
-
-            tabControl.Pages.Add(formattingPage);
+            
             tabControl.Pages.Add(compressionPage);
 
             this.Content = new TableLayout()
@@ -138,6 +168,10 @@ namespace glTF_BinExporter
 
             useDisplayColorForUnsetMaterial.Checked = glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials;
 
+            exportTextureCoordinates.Checked = glTFBinExporterPlugin.ExportTextureCoordinates;
+            exportVertexNormals.Checked = glTFBinExporterPlugin.ExportVertexNormals;
+            exportVertexColors.Checked = glTFBinExporterPlugin.ExportVertexColors;
+
             useDracoCompressionCheck.Checked = glTFBinExporterPlugin.UseDracoCompression;
             EnableDisableDracoControls(glTFBinExporterPlugin.UseDracoCompression);
 
@@ -152,6 +186,10 @@ namespace glTF_BinExporter
             glTFBinExporterPlugin.MapRhinoZToGltfY = GetCheckboxValue(mapZtoY);
             glTFBinExporterPlugin.ExportMaterials = GetCheckboxValue(exportMaterials);
             glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials = GetCheckboxValue(useDisplayColorForUnsetMaterial);
+
+            glTFBinExporterPlugin.ExportTextureCoordinates = GetCheckboxValue(exportTextureCoordinates);
+            glTFBinExporterPlugin.ExportVertexNormals = GetCheckboxValue(exportVertexNormals);
+            glTFBinExporterPlugin.ExportVertexColors = GetCheckboxValue(exportVertexColors);
 
             glTFBinExporterPlugin.UseDracoCompression = GetCheckboxValue(useDracoCompressionCheck);
             glTFBinExporterPlugin.DracoCompressionLevel = (int)dracoCompressionLevelInput.Value;
