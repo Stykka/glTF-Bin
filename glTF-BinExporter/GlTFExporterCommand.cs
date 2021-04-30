@@ -40,44 +40,85 @@ namespace glTF_BinExporter
 
             bool binary = GlTFUtils.IsFileGltfBinary(dialog.FileName);
 
-            var opts = new glTFExportOptions() { UseDracoCompression = false, DracoCompressionLevel = 10, DracoQuantizationBitsPosition = 11, DracoQuantizationBitsNormal = 8, DracoQuantizationBitsTexture = 10, UseBinary = binary };
-
-            if (mode == RunMode.Scripted)
+            if(!GetExportOptions(mode, out glTFExportOptions opts))
             {
-
-                Rhino.Input.RhinoGet.GetBool("Compression", true, "None", "Draco", ref opts.UseDracoCompression);
-
-                if (opts.UseDracoCompression)
-                {
-                    Rhino.Input.RhinoGet.GetInteger("Draco Compression Level (max=10)", true, ref opts.DracoCompressionLevel, 1, 10);
-                    Rhino.Input.RhinoGet.GetInteger("Quantization Position", true, ref opts.DracoQuantizationBitsPosition, 8, 32);
-                    Rhino.Input.RhinoGet.GetInteger("Quantization Normal", true, ref opts.DracoQuantizationBitsNormal, 8, 32);
-                    Rhino.Input.RhinoGet.GetInteger("Quantization Texture", true, ref opts.DracoQuantizationBitsTexture, 8, 32);
-                }
-
-                Rhino.Input.RhinoGet.GetBool("Map Rhino Z to glTF Y", true, "No", "Yes", ref opts.MapRhinoZToGltfY);
-            }
-            else
-            {
-                ExportOptionsDialog optionsDlg = new ExportOptionsDialog(opts);
-
-                if (optionsDlg.ShowModal() == null)
-                {
-                    return Result.Cancel;
-                }
+                return Result.Cancel;
             }
 
-            var rhinoObjects = go
-                                .Objects()
-                                .Select(o => o.Object())
-                                .ToArray();
+            Rhino.DocObjects.RhinoObject[] rhinoObjects = go.Objects().Select(o => o.Object()).ToArray();
 
-            if(!DoExport(dialog.FileName, opts, rhinoObjects, doc.RenderSettings.LinearWorkflow))
+            if(!DoExport(dialog.FileName, opts, binary, rhinoObjects, doc.RenderSettings.LinearWorkflow))
             {
                 return Result.Failure;
             }
 
             return Result.Success;
+        }
+
+        private bool GetExportOptions(RunMode mode, out glTFExportOptions options)
+        {
+            if(mode == RunMode.Scripted)
+            {
+                options = new glTFExportOptions();
+
+                if(Rhino.Input.RhinoGet.GetBool("Compression", true, "None", "Draco", ref options.UseDracoCompression) != Result.Success)
+                {
+                    return false;
+                }
+
+                if(Rhino.Input.RhinoGet.GetBool("Export Materials", true, "No", "Yes", ref options.ExportMaterials) != Result.Success)
+                {
+                    return false;
+                }
+
+                if(options.ExportMaterials)
+                {
+                    if(Rhino.Input.RhinoGet.GetBool("Use display color for objects with unset material", true, "No", "Yes", ref options.UseDisplayColorForUnsetMaterials) != Result.Success)
+                    {
+                        return false;
+                    }
+                }
+
+                if (options.UseDracoCompression)
+                {
+                    if(Rhino.Input.RhinoGet.GetInteger("Draco Compression Level (max=10)", true, ref options.DracoCompressionLevel, 1, 10) != Result.Success)
+                    {
+                        return false;
+                    }
+
+                    if(Rhino.Input.RhinoGet.GetInteger("Quantization Position", true, ref options.DracoQuantizationBitsPosition, 8, 32) != Result.Success)
+                    {
+                        return false;
+                    }
+
+                    if(Rhino.Input.RhinoGet.GetInteger("Quantization Normal", true, ref options.DracoQuantizationBitsNormal, 8, 32) != Result.Success)
+                    {
+                        return false;
+                    }
+
+                    if(Rhino.Input.RhinoGet.GetInteger("Quantization Texture", true, ref options.DracoQuantizationBitsTexture, 8, 32) != Result.Success)
+                    {
+                        return false;
+                    }
+                }
+
+                if(Rhino.Input.RhinoGet.GetBool("Map Rhino Z to glTF Y", true, "No", "Yes", ref options.MapRhinoZToGltfY) != Result.Success)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            else
+            {
+                ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
+
+                Eto.Forms.DialogResult result = optionsDlg.ShowModal();
+
+                options = glTFBinExporterPlugin.GetSavedOptions();
+
+                return result == Eto.Forms.DialogResult.Ok;
+            }
         }
 
         private SaveFileDialog GetSaveFileDialog()
@@ -90,14 +131,14 @@ namespace glTF_BinExporter
             };
         }
 
-        public static bool DoExport(string fileName, glTFExportOptions opts, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects, Rhino.Render.LinearWorkflow workflow)
+        public static bool DoExport(string fileName, glTFExportOptions options, bool binary, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects, Rhino.Render.LinearWorkflow workflow)
         {
             try
             {
-                RhinoDocGltfConverter converter = new RhinoDocGltfConverter(opts, rhinoObjects, workflow);
+                RhinoDocGltfConverter converter = new RhinoDocGltfConverter(options, binary, rhinoObjects, workflow);
                 glTFLoader.Schema.Gltf gltf = converter.ConvertToGltf();
 
-                if(opts.UseBinary)
+                if(binary)
                 {
                     byte[] bytes = converter.GetBinaryBuffer();
                     glTFLoader.Interface.SaveBinaryModel(gltf, bytes.Length == 0 ? null : bytes, fileName);

@@ -15,21 +15,25 @@ namespace glTF_BinExporter
 {
     class RhinoMaterialGltfConverter
     {
-        public RhinoMaterialGltfConverter(glTFExportOptions options, gltfSchemaDummy dummy, List<byte> binaryBuffer, Rhino.DocObjects.Material rhinoMaterial, LinearWorkflow workflow)
+        public RhinoMaterialGltfConverter(glTFExportOptions options, bool binary, gltfSchemaDummy dummy, List<byte> binaryBuffer, RenderMaterial renderMaterial, LinearWorkflow workflow)
         {
             this.options = options;
+            this.binary = binary;
             this.dummy = dummy;
             this.binaryBuffer = binaryBuffer;
-            this.rhinoMaterial = rhinoMaterial;
+            this.rhinoMaterial = renderMaterial.SimulatedMaterial(RenderTexture.TextureGeneration.Allow);
+            this.renderMaterial = renderMaterial;
             this.workflow = workflow;
         }
 
         private glTFExportOptions options = null;
+        private bool binary = false;
         private gltfSchemaDummy dummy = null;
         private List<byte> binaryBuffer = null;
         private LinearWorkflow workflow = null;
 
         private Rhino.DocObjects.Material rhinoMaterial = null;
+        private RenderMaterial renderMaterial = null;
 
         public int AddMaterial()
         {
@@ -312,7 +316,7 @@ namespace glTF_BinExporter
 
         private glTFLoader.Schema.Image GetImageFromFile(string fileName)
         {
-            if (options.UseBinary)
+            if (binary)
             {
                 return GetImageFromFileBinary(fileName);
             }
@@ -580,7 +584,7 @@ namespace glTF_BinExporter
 
         private glTFLoader.Schema.Image GetImageFromBitmap(Bitmap bitmap)
         {
-            if (options.UseBinary)
+            if (binary)
             {
                 return GetImageFromBitmapBinary(bitmap);
             }

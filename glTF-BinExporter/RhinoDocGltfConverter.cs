@@ -17,21 +17,25 @@ namespace glTF_BinExporter
 {
     class RhinoDocGltfConverter
     {
-        public RhinoDocGltfConverter(glTFExportOptions options, IEnumerable<RhinoObject> objects, LinearWorkflow workflow)
+        public RhinoDocGltfConverter(glTFExportOptions options, bool binary, IEnumerable<RhinoObject> objects, LinearWorkflow workflow)
         {
             this.options = options;
+            this.binary = binary;
             this.objects = objects;
             this.workflow = workflow;
         }
 
-        public RhinoDocGltfConverter(glTFExportOptions options, RhinoDoc doc, LinearWorkflow workflow)
+        public RhinoDocGltfConverter(glTFExportOptions options, bool binary, RhinoDoc doc, LinearWorkflow workflow)
         {
             this.options = options;
+            this.binary = binary;
             this.objects = doc.Objects;
             this.workflow = null;
         }
 
         private IEnumerable<RhinoObject> objects = null;
+
+        private bool binary = false;
         private glTFExportOptions options = null;
         private LinearWorkflow workflow = null;
 
@@ -90,26 +94,26 @@ namespace glTF_BinExporter
 
             var sanitized = GlTFUtils.SanitizeRhinoObjects(objects);
 
-            foreach(Tuple<Rhino.Geometry.Mesh[], Rhino.DocObjects.Material, Guid, RhinoObject> tuple in sanitized)
+            foreach(ObjectExportData exportData in sanitized)
             {
                 if(options.UseDracoCompression)
                 {
-                    AddRhinoObjectDraco(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4);
+                    AddRhinoObjectDraco(exportData);
                 }
                 else
                 {
-                    if (options.UseBinary)
+                    if (binary)
                     {
-                        AddRhinoObjectBinary(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4);
+                        AddRhinoObjectBinary(exportData);
                     }
                     else
                     {
-                        AddRhinoObjectText(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4);
+                        AddRhinoObjectText(exportData);
                     }
                 }
             }
 
-            if(options.UseBinary && binaryBuffer.Count > 0)
+            if(binary && binaryBuffer.Count > 0)
             {
                 //have to add the empty buffer for the binary file header
                 dummy.Buffers.Add(new glTFLoader.Schema.Buffer()
@@ -127,14 +131,14 @@ namespace glTF_BinExporter
             return binaryBuffer.ToArray();
         }
 
-        private void AddRhinoObjectDraco(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid materialId, RhinoObject rhinoObject)
+        private void AddRhinoObjectDraco(ObjectExportData data)
         {
-            int materialIndex = GetMaterial(material, materialId);
+            var materialIndex = GetMaterial(data.RenderMaterial, data.Object);
 
             var primitives = new List<MeshPrimitive>();
 
             // For each rhino mesh, create gl-buffers, gl-meshes, etc.
-            foreach (var rhinoMesh in rhinoMeshes)
+            foreach (var rhinoMesh in data.Meshes)
             {
                 if(options.MapRhinoZToGltfY)
                 {
@@ -367,7 +371,7 @@ namespace glTF_BinExporter
 
         public void WriteDracoBytes(byte[] bytes, out int bufferIndex, out int byteOffset)
         {
-            if(options.UseBinary)
+            if(binary)
             {
                 byteOffset = (int)binaryBuffer.Count;
                 binaryBuffer.AddRange(bytes);
@@ -385,13 +389,13 @@ namespace glTF_BinExporter
             }
         }
 
-        private void AddRhinoObjectBinary(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid materialId, RhinoObject rhinoObject)
+        private void AddRhinoObjectBinary(ObjectExportData data)
         {
-            int materialIndex = GetMaterial(material, materialId);
+            var materialIndex = GetMaterial(data.RenderMaterial, data.Object);
 
             var primitives = new List<MeshPrimitive>();
 
-            foreach (var rhinoMesh in rhinoMeshes)
+            foreach (var rhinoMesh in data.Meshes)
             {
                 if (options.MapRhinoZToGltfY)
                 {
@@ -544,7 +548,7 @@ namespace glTF_BinExporter
             var node = new Node()
             {
                 Mesh = idxMesh,
-                Name = string.IsNullOrEmpty(rhinoObject.Name) ? null : rhinoObject.Name,
+                Name = string.IsNullOrEmpty(data.Object.Name) ? null : data.Object.Name,
             };
 
             int idxNode = dummy.Nodes.AddAndReturnIndex(node);
@@ -552,13 +556,13 @@ namespace glTF_BinExporter
             dummy.Scenes[dummy.Scene].Nodes.Add(idxNode);
         }
 
-        private void AddRhinoObjectText(Rhino.Geometry.Mesh[] rhinoMeshes, Rhino.DocObjects.Material material, Guid materialId, RhinoObject rhinoObject)
+        private void AddRhinoObjectText(ObjectExportData data)
         {
-            int materialIndex = GetMaterial(material, materialId);
+            var materialIndex = GetMaterial(data.RenderMaterial, data.Object);
 
             var primitives = new List<MeshPrimitive>();	
 
-            foreach (var rhinoMesh in rhinoMeshes)	
+            foreach (var rhinoMesh in data.Meshes)	
             {
                 if (options.MapRhinoZToGltfY)
                 {
@@ -702,7 +706,7 @@ namespace glTF_BinExporter
             var node = new Node()
             {
                 Mesh = idxMesh,
-                Name = string.IsNullOrEmpty(rhinoObject.Name) ? null : rhinoObject.Name,
+                Name = string.IsNullOrEmpty(data.Object.Name) ? null : data.Object.Name,
             };
 
             int idxNode = dummy.Nodes.AddAndReturnIndex(node);
@@ -865,16 +869,60 @@ namespace glTF_BinExporter
             return bytesEnumerable.ToArray();
         }
 
-        int GetMaterial(Rhino.DocObjects.Material material, Guid materialId)
+        int? GetMaterial(RenderMaterial material, RhinoObject rhinoObject)
         {
+            if(!options.ExportMaterials)
+            {
+                return null;
+            }
+            
+            if(material == null && options.UseDisplayColorForUnsetMaterials)
+            {
+                Color4f objectColor = GetObjectColor(rhinoObject);
+                return CreateSolidColorMaterial(objectColor);
+            }
+            else if(material == null)
+            {
+                material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
+            }
+
+            Guid materialId = material.Id;
+
             if(!materialsMap.TryGetValue(materialId, out int materialIndex))
             {
-                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, dummy, binaryBuffer, material, workflow);
+                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
                 materialIndex = materialConverter.AddMaterial();
                 materialsMap.Add(materialId, materialIndex);
             }
 
             return materialIndex;
+        }
+
+        int CreateSolidColorMaterial(Color4f color)
+        {
+            glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
+            {
+                PbrMetallicRoughness = new MaterialPbrMetallicRoughness()
+                {
+                    BaseColorFactor = color.ToFloatArray(),
+                }
+            };
+
+            return dummy.Materials.AddAndReturnIndex(material);
+        }
+
+        Color4f GetObjectColor(RhinoObject rhinoObject)
+        {
+            if(rhinoObject.Attributes.ColorSource == ObjectColorSource.ColorFromLayer)
+            {
+                int layerIndex = rhinoObject.Attributes.LayerIndex;
+
+                return new Color4f(rhinoObject.Document.Layers[layerIndex].Color);
+            }
+            else
+            {
+                return new Color4f(rhinoObject.Attributes.ObjectColor);
+            }
         }
 
     }
