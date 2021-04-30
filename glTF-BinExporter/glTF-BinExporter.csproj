@@ -7,10 +7,9 @@
     <Title>glTF_BinExporter</Title>
     <Description>Description of glTF_BinExporter</Description>
     <RhinoMacLauncher>/Applications/Rhino 7.app</RhinoMacLauncher>
-    <ReleaseVersion>1.7.0.0</ReleaseVersion>
+    <ReleaseVersion>1.8.0.0</ReleaseVersion>
     <PackageVersion>1.6.0.0</PackageVersion>
     <Authors>Aske Doerge, Joshua Kennedy</Authors>
-    <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -26,7 +25,7 @@
     <None Remove="glTF\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RhinoCommon" Version="7.4.21078.1001" IncludeAssets="compile;build" />
+    <PackageReference Include="RhinoCommon" Version="7.5.21100.3001" IncludeAssets="compile;build" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
   
