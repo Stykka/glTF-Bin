@@ -30,11 +30,14 @@ namespace glTF_BinExporter
         {
             bool binary = GlTFUtils.IsFileGltfBinary(filename);
 
-            ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
-
-            if(optionsDlg.ShowModal() != Eto.Forms.DialogResult.Ok)
+            if(!UseSavedSettingsDontShowDialog)
             {
-                return WriteFileResult.Cancel;
+                ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
+
+                if (optionsDlg.ShowModal() != Eto.Forms.DialogResult.Ok)
+                {
+                    return WriteFileResult.Cancel;
+                }
             }
 
             glTFExportOptions exportOptions = glTFBinExporterPlugin.GetSavedOptions();
@@ -167,6 +170,15 @@ namespace glTF_BinExporter
         {
             get => Instance.Settings.GetInteger(dracoQuantizationBitsTextureKey, DracoQuantizationBitsTextureDefault);
             set => Instance.Settings.SetInteger(dracoQuantizationBitsTextureKey, value);
+        }
+
+        private const string useSavedSettingsDontShowDialogKey = "UseSavedSettingsDontShowDialog";
+        public const bool UseSavedSettingsDontShowDialogDefault = false;
+
+        public static bool UseSavedSettingsDontShowDialog
+        {
+            get => Instance.Settings.GetBool(useSavedSettingsDontShowDialogKey, UseSavedSettingsDontShowDialogDefault);
+            set => Instance.Settings.SetBool(useSavedSettingsDontShowDialogKey, value);
         }
 
         public static glTFExportOptions GetSavedOptions()

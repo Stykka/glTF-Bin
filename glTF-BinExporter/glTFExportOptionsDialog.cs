@@ -33,6 +33,8 @@ namespace glTF_BinExporter
         private Button cancelButton = new Button();
         private Button okButton = new Button();
 
+        private CheckBox useSettingsDontShowDialogCheck = new CheckBox();
+
         public ExportOptionsDialog()
         {
             Resizable = false;
@@ -64,6 +66,8 @@ namespace glTF_BinExporter
 
             okButton.Text = "Ok";
 
+            useSettingsDontShowDialogCheck.Text = "Always use these settings. Do not show this dialog again.";
+
             OptionsToDialog();
 
             useDracoCompressionCheck.CheckedChanged += UseDracoCompressionCheck_CheckedChanged;
@@ -72,8 +76,8 @@ namespace glTF_BinExporter
             cancelButton.Click += CancelButton_Click;
             okButton.Click += OkButton_Click;
 
-            var gBox = new GroupBox() { Text = "Draco Quantization Bits" };
-            gBox.Content = new TableLayout()
+            var dracoGroupBox = new GroupBox() { Text = "Draco Quantization Bits" };
+            dracoGroupBox.Content = new TableLayout()
             {
                 Padding = DefaultPadding,
                 Spacing = DefaultSpacing,
@@ -91,7 +95,7 @@ namespace glTF_BinExporter
 
             layout.AddSeparateRow(useDracoCompressionCheck, null);
             layout.AddSeparateRow(dracoCompressionLabel, dracoCompressionLevelInput, null);
-            layout.AddSeparateRow(gBox, null);
+            layout.AddSeparateRow(dracoGroupBox, null);
 
             TabControl tabControl = new TabControl();
 
@@ -147,6 +151,7 @@ namespace glTF_BinExporter
                 {
                     new TableRow(tabControl),
                     null,
+                    new TableRow(useSettingsDontShowDialogCheck),
                     new TableRow(new TableLayout()
                     {
                         Padding = DefaultPadding,
@@ -162,6 +167,8 @@ namespace glTF_BinExporter
 
         private void OptionsToDialog()
         {
+            useSettingsDontShowDialogCheck.Checked = glTFBinExporterPlugin.UseSavedSettingsDontShowDialog;
+
             mapZtoY.Checked = glTFBinExporterPlugin.MapRhinoZToGltfY;
             exportMaterials.Checked = glTFBinExporterPlugin.ExportMaterials;
             EnableDisableMaterialControls(glTFBinExporterPlugin.ExportMaterials);
@@ -183,6 +190,8 @@ namespace glTF_BinExporter
 
         private void DialogToOptions()
         {
+            glTFBinExporterPlugin.UseSavedSettingsDontShowDialog = GetCheckboxValue(useSettingsDontShowDialogCheck);
+
             glTFBinExporterPlugin.MapRhinoZToGltfY = GetCheckboxValue(mapZtoY);
             glTFBinExporterPlugin.ExportMaterials = GetCheckboxValue(exportMaterials);
             glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials = GetCheckboxValue(useDisplayColorForUnsetMaterial);
