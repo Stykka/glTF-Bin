@@ -11,6 +11,13 @@ using Rhino.Display;
 
 namespace glTF_BinExporter
 {
+    public struct ObjectExportData
+    {
+        public Rhino.Geometry.Mesh[] Meshes;
+        public RenderMaterial RenderMaterial;
+        public RhinoObject Object;
+    }
+
     class RhinoDocGltfConverter
     {
         public RhinoDocGltfConverter(glTFExportOptions options, bool binary, IEnumerable<RhinoObject> objects, LinearWorkflow workflow)
@@ -65,7 +72,7 @@ namespace glTF_BinExporter
                 dummy.ExtensionsRequired.Add(Constants.DracoMeshCompressionExtensionTag);
             }
 
-            var sanitized = GlTFUtils.SanitizeRhinoObjects(objects);
+            var sanitized = SanitizeRhinoObjects(objects);
 
             foreach(ObjectExportData exportData in sanitized)
             {
@@ -164,5 +171,160 @@ namespace glTF_BinExporter
             }
         }
 
+        public Rhino.Geometry.Mesh[] GetMeshes(RhinoObject rhinoObject)
+        {
+
+            if (rhinoObject.ObjectType == ObjectType.Mesh)
+            {
+                MeshObject meshObj = rhinoObject as MeshObject;
+
+                return new Rhino.Geometry.Mesh[] { meshObj.MeshGeometry };
+            }
+
+            // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
+            // First make sure the internal rhino mesh has been created
+            rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+
+            // Then get the internal rhino meshes
+            Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
+
+            List<Rhino.Geometry.Mesh> validMeshes = new List<Rhino.Geometry.Mesh>();
+
+            foreach (Rhino.Geometry.Mesh mesh in meshes)
+            {
+                if (MeshIsValidForExport(mesh))
+                {
+                    mesh.EnsurePrivateCopy();
+                    validMeshes.Add(mesh);
+                }
+            }
+
+            return validMeshes.Count == 0 ? new Rhino.Geometry.Mesh[] { } : validMeshes.ToArray();
+        }
+
+        public bool MeshIsValidForExport(Rhino.Geometry.Mesh mesh)
+        {
+            if (mesh == null)
+            {
+                return false;
+            }
+
+            if (mesh.Vertices.Count == 0)
+            {
+                return false;
+            }
+
+            if (mesh.Faces.Count == 0)
+            {
+                return false;
+            }
+
+            if(!options.ExportOpenMeshes && !mesh.IsClosed)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private string GetDebugName(RhinoObject rhinoObject)
+        {
+            if (string.IsNullOrEmpty(rhinoObject.Name))
+            {
+                return "(Unnamed)";
+            }
+
+            return rhinoObject.Name;
+        }
+
+        public List<ObjectExportData> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
+        {
+            var rhinoObjectsRes = new List<ObjectExportData>();
+
+            foreach (var rhinoObject in rhinoObjects)
+            {
+                if (!rhinoObject.IsMeshable(Rhino.Geometry.MeshType.Any))
+                {
+                    RhinoApp.WriteLine("Skipping " + GetDebugName(rhinoObject) + ", object is not meshable. Object is a " + rhinoObject.ObjectType.ToString());
+                    continue;
+                }
+
+                var mat = rhinoObject.RenderMaterial;
+
+                var isValidGeometry = Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
+
+                if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
+                {
+                    var meshes = GetMeshes(rhinoObject);
+
+                    if (meshes.Length > 0) //Objects need a mesh to export
+                    {
+                        rhinoObjectsRes.Add(new ObjectExportData()
+                        {
+                            Meshes = meshes,
+                            RenderMaterial = mat,
+                            Object = rhinoObject,
+                        });
+                    }
+                }
+                else if (rhinoObject.ObjectType == ObjectType.InstanceReference)
+                {
+                    InstanceObject instanceObject = rhinoObject as InstanceObject;
+
+                    List<RhinoObject> objects = new List<RhinoObject>();
+                    List<Rhino.Geometry.Transform> transforms = new List<Rhino.Geometry.Transform>();
+
+                    ExplodeRecursive(instanceObject, instanceObject.InstanceXform, objects, transforms);
+
+                    // Transform the exploded geo into its correct place
+                    foreach (var item in objects.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
+                    {
+                        var meshes = GetMeshes(item.rhinoObject);
+
+                        foreach (var mesh in meshes)
+                        {
+                            mesh.Transform(item.trans);
+                        }
+
+                        if (meshes.Length > 0) //Objects need a mesh to export
+                        {
+                            rhinoObjectsRes.Add(new ObjectExportData()
+                            {
+                                Meshes = meshes,
+                                RenderMaterial = mat,
+                                Object = item.rhinoObject,
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    RhinoApp.WriteLine("Unknown geo type encountered.");
+                }
+            }
+
+            return rhinoObjectsRes;
+        }
+
+        private void ExplodeRecursive(InstanceObject instanceObject, Rhino.Geometry.Transform instanceTransform, List<RhinoObject> pieces, List<Rhino.Geometry.Transform> transforms)
+        {
+            for (int i = 0; i < instanceObject.InstanceDefinition.ObjectCount; i++)
+            {
+                RhinoObject rhinoObject = instanceObject.InstanceDefinition.Object(i);
+
+                if (rhinoObject is InstanceObject nestedObject)
+                {
+                    Rhino.Geometry.Transform nestedTransform = instanceTransform * nestedObject.InstanceXform;
+
+                    ExplodeRecursive(nestedObject, nestedTransform, pieces, transforms);
+                }
+                else
+                {
+                    pieces.Add(rhinoObject);
+
+                    transforms.Add(instanceTransform);
+                }
+            }
+        }
     }
 }

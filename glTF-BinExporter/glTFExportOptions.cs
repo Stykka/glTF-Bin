@@ -14,6 +14,7 @@ namespace glTF_BinExporter
 
         public bool ExportTextureCoordinates = glTFBinExporterPlugin.ExportTextureCoordinatesDefault;
         public bool ExportVertexNormals = glTFBinExporterPlugin.ExportVertexNormalsDefault;
+        public bool ExportOpenMeshes = glTFBinExporterPlugin.ExportOpenMeshesDefault;
         public bool ExportVertexColors = glTFBinExporterPlugin.ExportVertexColorsDefault;
 
         public bool UseDracoCompression = glTFBinExporterPlugin.UseDracoCompressionDefault;

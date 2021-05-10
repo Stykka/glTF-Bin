@@ -18,6 +18,7 @@ namespace glTF_BinExporter
 
         private CheckBox exportTextureCoordinates = new CheckBox();
         private CheckBox exportVertexNormals = new CheckBox();
+        private CheckBox exportOpenMeshes = new CheckBox();
         private CheckBox exportVertexColors = new CheckBox();
 
         private CheckBox useDracoCompressionCheck = new CheckBox();
@@ -50,6 +51,8 @@ namespace glTF_BinExporter
             exportTextureCoordinates.Text = "Export texture coordinates";
 
             exportVertexNormals.Text = "Export vertex normals";
+
+            exportOpenMeshes.Text = "Export open meshes";
 
             exportVertexColors.Text = "Export vertex colors";
 
@@ -128,6 +131,7 @@ namespace glTF_BinExporter
                     {
                         new TableRow(exportTextureCoordinates),
                         new TableRow(exportVertexNormals),
+                        new TableRow(exportOpenMeshes),
                         new TableRow(exportVertexColors),
                     },
                 },
@@ -177,6 +181,7 @@ namespace glTF_BinExporter
 
             exportTextureCoordinates.Checked = glTFBinExporterPlugin.ExportTextureCoordinates;
             exportVertexNormals.Checked = glTFBinExporterPlugin.ExportVertexNormals;
+            exportOpenMeshes.Checked = glTFBinExporterPlugin.ExportOpenMeshes;
             exportVertexColors.Checked = glTFBinExporterPlugin.ExportVertexColors;
 
             useDracoCompressionCheck.Checked = glTFBinExporterPlugin.UseDracoCompression;
@@ -198,6 +203,7 @@ namespace glTF_BinExporter
 
             glTFBinExporterPlugin.ExportTextureCoordinates = GetCheckboxValue(exportTextureCoordinates);
             glTFBinExporterPlugin.ExportVertexNormals = GetCheckboxValue(exportVertexNormals);
+            glTFBinExporterPlugin.ExportOpenMeshes = GetCheckboxValue(exportOpenMeshes);
             glTFBinExporterPlugin.ExportVertexColors = GetCheckboxValue(exportVertexColors);
 
             glTFBinExporterPlugin.UseDracoCompression = GetCheckboxValue(useDracoCompressionCheck);

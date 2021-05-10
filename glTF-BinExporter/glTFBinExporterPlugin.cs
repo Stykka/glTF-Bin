@@ -136,6 +136,15 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(ExportVertexColorsKey, value);
         }
 
+        private const string exportOpenMeshesKey = "ExportOpenMeshes";
+        public const bool ExportOpenMeshesDefault = true;
+
+        public static bool ExportOpenMeshes
+        {
+            get => Instance.Settings.GetBool(exportOpenMeshesKey, ExportOpenMeshesDefault);
+            set => Instance.Settings.SetBool(exportOpenMeshesKey, value);
+        }
+
         private const string dracoCompressionLevelKey = "DracoCompressionLevel";
         public const int DracoCompressionLevelDefault = 10;
         
@@ -191,6 +200,7 @@ namespace glTF_BinExporter
 
                 ExportTextureCoordinates = ExportTextureCoordinates,
                 ExportVertexNormals = ExportVertexNormals,
+                ExportOpenMeshes = ExportOpenMeshes,
                 ExportVertexColors = ExportVertexColors,
 
                 UseDracoCompression = UseDracoCompression,
