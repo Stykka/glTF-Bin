@@ -27,6 +27,7 @@ namespace glTF_BinExporter
         public const string TexCoord0AttributeTag = "TEXCOORD_0";
 
         public const string DracoMeshCompressionExtensionTag = "KHR_draco_mesh_compression";
+        public const string MaterialsTransmissionExtensionTag = "KHR_materials_transmission";
     }
 
     public class DracoGeometryInfo
