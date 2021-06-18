@@ -190,6 +190,7 @@ namespace glTF_BinExporter
                 rhinoMesh,
                 new DracoCompressionOptions()
                 {
+                    VertexColorFormat = DracoColorFormat.RGBA,
                     CompressionLevel = options.DracoCompressionLevel,
                     IncludeNormals = ExportNormals(rhinoMesh),
                     IncludeTextureCoordinates = ExportTextureCoordinates(rhinoMesh),
