@@ -63,5 +63,10 @@ namespace glTF_BinExporter
         public int VertexColorCount;
         public Color4f VertexColorMin;
         public Color4f VertexColorMax;
+
+        public int VertexAttributePosition;
+        public int NormalAttributePosition;
+        public int TextureCoordinatesAttributePosition;
+        public int VertexColorAttributePosition;
     }
 }

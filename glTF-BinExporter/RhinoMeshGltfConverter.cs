@@ -133,27 +133,25 @@ namespace glTF_BinExporter
 
                 if(options.UseDracoCompression)
                 {
-                    glTFDracoMeshCompressionObject dracoCompressionObject = new glTFDracoMeshCompressionObject();
+                    glTFExtensions.KHR_draco_mesh_compression dracoCompressionObject = new glTFExtensions.KHR_draco_mesh_compression();
 
-                    dracoCompressionObject.bufferView = currentGeometryInfo.BufferViewIndex;
+                    dracoCompressionObject.BufferView = currentGeometryInfo.BufferViewIndex;
 
-                    int attributeIdCounter = 0;
-
-                    dracoCompressionObject.attributes.Add(Constants.PositionAttributeTag, attributeIdCounter++);
+                    dracoCompressionObject.Attributes.Add(Constants.PositionAttributeTag, currentGeometryInfo.VertexAttributePosition);
 
                     if(exportNormals)
                     {
-                        dracoCompressionObject.attributes.Add(Constants.NormalAttributeTag, attributeIdCounter++);
+                        dracoCompressionObject.Attributes.Add(Constants.NormalAttributeTag, currentGeometryInfo.NormalAttributePosition);
                     }
                     
                     if(exportTextureCoordinates)
                     {
-                        dracoCompressionObject.attributes.Add(Constants.TexCoord0AttributeTag, attributeIdCounter++);
+                        dracoCompressionObject.Attributes.Add(Constants.TexCoord0AttributeTag, currentGeometryInfo.TextureCoordinatesAttributePosition);
                     }
                     
                     if(exportVertexColors)
                     {
-                        dracoCompressionObject.attributes.Add(Constants.VertexColorAttributeTag, attributeIdCounter++);
+                        dracoCompressionObject.Attributes.Add(Constants.VertexColorAttributeTag, currentGeometryInfo.VertexColorAttributePosition);
                     }
 
                     primitive.Extensions = new Dictionary<string, object>();
@@ -190,6 +188,7 @@ namespace glTF_BinExporter
                 rhinoMesh,
                 new DracoCompressionOptions()
                 {
+                    VertexColorFormat = DracoColorFormat.RGBA,
                     CompressionLevel = options.DracoCompressionLevel,
                     IncludeNormals = ExportNormals(rhinoMesh),
                     IncludeTextureCoordinates = ExportTextureCoordinates(rhinoMesh),
@@ -712,6 +711,11 @@ namespace glTF_BinExporter
             try
             {
                 dracoCompression.Write(fileName);
+
+                dracoGeoInfo.VertexAttributePosition = dracoCompression.VertexAttributePosition;
+                dracoGeoInfo.NormalAttributePosition = dracoCompression.NormalAttributePosition;
+                dracoGeoInfo.TextureCoordinatesAttributePosition = dracoCompression.TextureCoordinatesAttributePosition;
+                dracoGeoInfo.VertexColorAttributePosition = dracoCompression.VertexColorAttributePosition;
 
                 byte[] dracoBytes = GetDracoBytes(fileName);
 
