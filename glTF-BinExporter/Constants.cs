@@ -1,4 +1,6 @@
-﻿using Rhino.DocObjects;
+﻿using Rhino.Display;
+using Rhino.DocObjects;
+using Rhino.Geometry;
 
 namespace glTF_BinExporter
 {
@@ -25,32 +27,39 @@ namespace glTF_BinExporter
         public const string PositionAttributeTag = "POSITION";
         public const string NormalAttributeTag = "NORMAL";
         public const string TexCoord0AttributeTag = "TEXCOORD_0";
+        public const string VertexColorAttributeTag = "COLOR_0";
 
         public const string DracoMeshCompressionExtensionTag = "KHR_draco_mesh_compression";
     }
 
     public class DracoGeometryInfo
     {
-        public bool success;
+        public bool Success;
 
-        public int bufferIndex;
-        public int byteOffset;
-        public int byteLength;
+        public int BufferIndex;
+        public int ByteOffset;
+        public int ByteLength;
 
-        public int verticesNum;
-        public float[] verticesMin;
-        public float[] verticesMax;
+        public int BufferViewIndex;
 
-        public int trianglesNum;
-        public float trianglesMin;
-        public float trianglesMax;
+        public int VerticesCount;
+        public Point3d VerticesMin;
+        public Point3d VerticesMax;
 
-        public int normalsNum;
-        public float[] normalsMin;
-        public float[] normalsMax;
+        public int IndicesCount;
+        public float IndicesMin;
+        public float IndicesMax;
 
-        public int texCoordsNum;
-        public float[] texCoordsMin;
-        public float[] texCoordsMax;
+        public int NormalsCount;
+        public Vector3f NormalsMin;
+        public Vector3f NormalsMax;
+
+        public int TexCoordsCount;
+        public Point2f TexCoordsMin;
+        public Point2f TexCoordsMax;
+
+        public int VertexColorCount;
+        public Color4f VertexColorMin;
+        public Color4f VertexColorMax;
     }
 }
