@@ -28,6 +28,7 @@ namespace glTF_BinExporter
 
         public const string DracoMeshCompressionExtensionTag = "KHR_draco_mesh_compression";
         public const string MaterialsTransmissionExtensionTag = "KHR_materials_transmission";
+        public const string MaterialsClearcoatExtensionTag = "KHR_materials_clearcoat";
     }
 
     public class DracoGeometryInfo

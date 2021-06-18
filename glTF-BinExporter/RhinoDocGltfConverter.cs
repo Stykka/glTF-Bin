@@ -93,6 +93,7 @@ namespace glTF_BinExporter
             }
 
             dummy.ExtensionsUsed.Add(Constants.MaterialsTransmissionExtensionTag);
+            dummy.ExtensionsUsed.Add(Constants.MaterialsClearcoatExtensionTag);
 
             var sanitized = GlTFUtils.SanitizeRhinoObjects(objects);
 

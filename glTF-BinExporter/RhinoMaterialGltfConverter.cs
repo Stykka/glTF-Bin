@@ -48,13 +48,18 @@ namespace glTF_BinExporter
                 rhinoMaterial.ToPhysicallyBased();
             }
 
+            Rhino.DocObjects.PhysicallyBasedMaterial pbr = rhinoMaterial.PhysicallyBased;
+
             // Textures
-            Rhino.DocObjects.Texture metallicTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Metallic);
-            Rhino.DocObjects.Texture roughnessTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Roughness);
-            Rhino.DocObjects.Texture normalTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.Bump);
-            Rhino.DocObjects.Texture occlusionTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_AmbientOcclusion);
-            Rhino.DocObjects.Texture emissiveTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.PBR_Emission);
-            Rhino.DocObjects.Texture opacityTexture = rhinoMaterial.PhysicallyBased.GetTexture(TextureType.Opacity);
+            Rhino.DocObjects.Texture metallicTexture = pbr.GetTexture(TextureType.PBR_Metallic);
+            Rhino.DocObjects.Texture roughnessTexture = pbr.GetTexture(TextureType.PBR_Roughness);
+            Rhino.DocObjects.Texture normalTexture = pbr.GetTexture(TextureType.Bump);
+            Rhino.DocObjects.Texture occlusionTexture = pbr.GetTexture(TextureType.PBR_AmbientOcclusion);
+            Rhino.DocObjects.Texture emissiveTexture = pbr.GetTexture(TextureType.PBR_Emission);
+            Rhino.DocObjects.Texture opacityTexture = pbr.GetTexture(TextureType.Opacity);
+            Rhino.DocObjects.Texture clearcoatTexture = pbr.GetTexture(TextureType.PBR_Clearcoat);
+            Rhino.DocObjects.Texture clearcoatRoughessTexture = pbr.GetTexture(TextureType.PBR_ClearcoatRoughness);
+            Rhino.DocObjects.Texture clearcoatNormalTexture = pbr.GetTexture(TextureType.PBR_ClearcoatBump);
 
             HandleBaseColor(rhinoMaterial, material);
 
@@ -67,8 +72,8 @@ namespace glTF_BinExporter
             }
             else
             {
-                material.PbrMetallicRoughness.MetallicFactor = (float)rhinoMaterial.PhysicallyBased.Metallic;
-                material.PbrMetallicRoughness.RoughnessFactor = (float)rhinoMaterial.PhysicallyBased.Roughness;
+                material.PbrMetallicRoughness.MetallicFactor = (float)pbr.Metallic;
+                material.PbrMetallicRoughness.RoughnessFactor = (float)pbr.Roughness;
             }
 
             if (normalTexture != null && normalTexture.Enabled)
@@ -116,21 +121,51 @@ namespace glTF_BinExporter
             material.Extensions = new Dictionary<string, object>();
 
             //Opacity => Transmission https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_transmission/README.md
+
+            glTFExtensions.KHR_materials_transmission transmission = new glTFExtensions.KHR_materials_transmission();
+
             if (opacityTexture != null && opacityTexture.Enabled)
             {
-                material.Extensions.Add(Constants.MaterialsTransmissionExtensionTag, new
-                {
-                    transmissionFactor = 1.0f,
-                    transmissionTexture = CreateOpacityTexture(opacityTexture),
-                });
+                transmission.TransmissionTexture = CreateOpacityTexture(opacityTexture);
+                transmission.TransmissionFactor = 1.0f;
             }
             else
             {
-                material.Extensions.Add(Constants.MaterialsTransmissionExtensionTag, new
-                {
-                    transmissionFactor = 1.0f - (float)rhinoMaterial.PhysicallyBased.Opacity,
-                });
+                transmission.TransmissionFactor = 1.0f - (float)pbr.Opacity;
             }
+
+            material.Extensions.Add(Constants.MaterialsTransmissionExtensionTag, transmission);
+
+            //Clearcoat => Clearcoat https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_clearcoat/README.md
+
+            glTFExtensions.KHR_materials_clearcoat clearcoat = new glTFExtensions.KHR_materials_clearcoat();
+
+            if(clearcoatTexture != null && clearcoatTexture.Enabled)
+            {
+                clearcoat.ClearcoatTexture = AddTexture(clearcoatTexture.FileReference.FullPath);
+                clearcoat.ClearcoatFactor = 1.0f;
+            }
+            else
+            {
+                clearcoat.ClearcoatFactor = (float)pbr.Clearcoat;
+            }
+
+            if(clearcoatRoughessTexture != null && clearcoatRoughessTexture.Enabled)
+            {
+                clearcoat.ClearcoatRoughnessTexture = AddTexture(clearcoatRoughessTexture.FileReference.FullPath);
+                clearcoat.ClearcoatRoughnessFactor = 1.0f;
+            }
+            else
+            {
+                clearcoat.ClearcoatRoughnessFactor = (float)pbr.ClearcoatRoughness;
+            }
+
+            if(clearcoatNormalTexture != null && clearcoatNormalTexture.Enabled)
+            {
+                clearcoat.ClearcoatNormalTexture = AddTextureNormal(clearcoatNormalTexture);
+            }
+
+            material.Extensions.Add(Constants.MaterialsClearcoatExtensionTag, clearcoat);
 
             return dummy.Materials.AddAndReturnIndex(material);
         }
@@ -231,6 +266,7 @@ namespace glTF_BinExporter
         bool IsLinear(RenderTexture texture)
         {
             CustomRenderContentAttribute[] attribs = texture.GetType().GetCustomAttributes(typeof(CustomRenderContentAttribute), false) as CustomRenderContentAttribute[];
+            
             if (attribs != null && attribs.Length > 0)
             {
                 return attribs[0].IsLinear;
@@ -434,98 +470,28 @@ namespace glTF_BinExporter
 
         private glTFLoader.Schema.MaterialNormalTextureInfo AddTextureNormal(Rhino.DocObjects.Texture normalTexture)
         {
-            Rhino.Render.RenderTexture normalRenderTexture = rhinoMaterial.RenderMaterial.GetTextureFromUsage(RenderMaterial.StandardChildSlots.Bump);
+            int textureIdx = AddNormalTexture(normalTexture);
 
-            int textureIdx = AddNormalTexture(normalTexture, normalRenderTexture);
-
-            double scale = rhinoMaterial.RenderMaterial.GetTextureAmountFromUsage(RenderMaterial.StandardChildSlots.Bump) / 100.0;
+            normalTexture.GetAlphaBlendValues(out double constant, out double a0, out double a1, out double a2, out double a3);
 
             return new glTFLoader.Schema.MaterialNormalTextureInfo()
             {
                 Index = textureIdx,
                 TexCoord = 0,
-                Scale = (float)scale,
+                Scale = (float)constant,
             };
         }
 
-        private int AddNormalTexture(Rhino.DocObjects.Texture normalTexture, RenderTexture normalRenderTexture)
+        private int AddNormalTexture(Rhino.DocObjects.Texture normalTexture)
         {
-            if (normalRenderTexture.IsNormalMap())
-            {
-                return AddTextureToBuffers(normalTexture.FileReference.FullPath);
-            }
-            else
-            {
-                Bitmap bmp = ConvertBumpToNormal(normalRenderTexture);
-                return GetTextureFromBitmap(bmp);
-            }
-        }
+            Bitmap bmp = new Bitmap(normalTexture.FileReference.FullPath);
 
-        private Bitmap ConvertBumpToNormal(RenderTexture bumpMapTexture)
-        {
-            bumpMapTexture.PixelSize(out int width, out int height, out int depth);
-
-            if(width <= 0)
+            if (!Rhino.BitmapExtensions.IsNormalMap(bmp, true, out bool pZ))
             {
-                width = 1024;
+                bmp = Rhino.BitmapExtensions.ConvertToNormalMap(bmp, true, out pZ);
             }
 
-            if(height <= 0)
-            {
-                height = 1024;
-            }
-
-            TextureEvaluator evaluator = bumpMapTexture.CreateEvaluator(RenderTexture.TextureEvaluatorFlags.Normal);
-
-            Bitmap bmp = new Bitmap(width, height);
-
-            //Sobel filter for bump to normal conversion https://en.wikipedia.org/wiki/Sobel_operator
-
-            double widthScaler = 1.0 / (width - 1);
-            double heightScaler = 1.0 / (height - 1);
-
-            for (int x = 0; x < width; x++)
-            {
-                for(int y = 0; y < height; y++)
-                {
-                    Point3d aLocation = new Point3d(Mod(x - 1, width) * widthScaler,  1.0 - Mod(y - 1, height) * heightScaler, 0.0);
-                    Point3d bLocation = new Point3d(Mod(x, width) * widthScaler,      1.0 - Mod(y - 1, height) * heightScaler, 0.0);
-                    Point3d cLocation = new Point3d(Mod(x + 1, width) * widthScaler,  1.0 - Mod(y - 1, height) * heightScaler, 0.0);
-                    Point3d dLocation = new Point3d(Mod(x - 1, width) * widthScaler,  1.0 - Mod(y, height) * heightScaler, 0.0);
-                    Point3d fLocation = new Point3d(Mod(x + 1, width) * widthScaler,  1.0 - Mod(y, height) * heightScaler, 0.0);
-                    Point3d gLocation = new Point3d(Mod(x - 1, width) * widthScaler,  1.0 - Mod(y + 1, height) * heightScaler, 0.0);
-                    Point3d hLocation = new Point3d(Mod(x, width) * widthScaler,      1.0 - Mod(y + 1, height) * heightScaler, 0.0);
-                    Point3d iLocation = new Point3d(Mod(x + 1, width) * widthScaler,  1.0 - Mod(y + 1, height) * heightScaler, 0.0);
-
-                    float a = evaluator.GetColor(aLocation, Vector3d.Zero, Vector3d.Zero).L;
-                    float b = evaluator.GetColor(bLocation, Vector3d.Zero, Vector3d.Zero).L;
-                    float c = evaluator.GetColor(cLocation, Vector3d.Zero, Vector3d.Zero).L;
-                    float d = evaluator.GetColor(dLocation, Vector3d.Zero, Vector3d.Zero).L;
-                    float f = evaluator.GetColor(fLocation, Vector3d.Zero, Vector3d.Zero).L;
-                    float g = evaluator.GetColor(gLocation, Vector3d.Zero, Vector3d.Zero).L;
-                    float h = evaluator.GetColor(hLocation, Vector3d.Zero, Vector3d.Zero).L;
-                    float i = evaluator.GetColor(iLocation, Vector3d.Zero, Vector3d.Zero).L;
-
-                    float dX = a - c + 2.0f * d + -2.0f * f + g - f;
-                    float dY = a + 2.0f * b + c - g - 2.0f * h - i;
-
-                    Vector3f normal = new Vector3f(dX, dY, 1.0f);
-                    normal.Unitize();
-
-                    normal = normal * 0.5f + new Vector3f(0.5f, 0.5f, 0.5f);
-
-                    Color4f color = new Color4f(normal.X, normal.Y, normal.Z, 1.0f);
-
-                    bmp.SetPixel(x, y, color.AsSystemColor());
-                }
-            }
-
-            return bmp;
-        }
-
-        public int Mod(int x, int m)
-        {
-            return (x % m + m) % m;
+            return GetTextureFromBitmap(bmp);
         }
 
         private glTFLoader.Schema.MaterialOcclusionTextureInfo AddTextureOcclusion(string texturePath)
