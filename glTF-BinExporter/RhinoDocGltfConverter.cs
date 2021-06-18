@@ -72,7 +72,10 @@ namespace glTF_BinExporter
                 dummy.ExtensionsRequired.Add(Constants.DracoMeshCompressionExtensionTag);
             }
 
-            var sanitized = SanitizeRhinoObjects(objects);
+            dummy.ExtensionsUsed.Add(Constants.MaterialsTransmissionExtensionTag);
+            dummy.ExtensionsUsed.Add(Constants.MaterialsClearcoatExtensionTag);
+
+            var sanitized = GlTFUtils.SanitizeRhinoObjects(objects);
 
             foreach(ObjectExportData exportData in sanitized)
             {
