@@ -1,6 +1,7 @@
 ﻿using Rhino;
 using Rhino.FileIO;
 using Rhino.PlugIns;
+using Rhino.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -34,7 +35,10 @@ namespace glTF_BinExporter
             {
                 ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
 
-                if (optionsDlg.ShowModal() != Eto.Forms.DialogResult.Ok)
+                optionsDlg.RestorePosition();
+                Eto.Forms.DialogResult result = optionsDlg.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+
+                if (result != Eto.Forms.DialogResult.Ok)
                 {
                     return WriteFileResult.Cancel;
                 }
@@ -68,7 +72,8 @@ namespace glTF_BinExporter
         {
             ExportOptionsDialog exportOptionsDialog = new ExportOptionsDialog();
 
-            exportOptionsDialog.ShowModal();
+            exportOptionsDialog.RestorePosition();
+            exportOptionsDialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
         }
 
         #region Settings
