@@ -162,7 +162,7 @@ namespace glTF_BinExporter
                         Spacing = DefaultSpacing,
                         Rows =
                         {
-                            new TableRow(cancelButton, okButton),
+                            new TableRow(new TableCell(cancelButton, true), new TableCell(okButton, true)),
                         }
                     }),
                 }
