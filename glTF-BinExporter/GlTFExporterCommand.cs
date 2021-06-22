@@ -113,7 +113,8 @@ namespace glTF_BinExporter
             {
                 ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
 
-                Eto.Forms.DialogResult result = optionsDlg.ShowModal();
+                optionsDlg.RestorePosition();
+                Eto.Forms.DialogResult result = optionsDlg.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
 
                 options = glTFBinExporterPlugin.GetSavedOptions();
 
