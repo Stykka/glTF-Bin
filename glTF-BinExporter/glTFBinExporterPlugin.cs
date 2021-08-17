@@ -1,12 +1,19 @@
 ﻿using Rhino;
 using Rhino.FileIO;
 using Rhino.PlugIns;
+using Rhino.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace glTF_BinExporter
 {
+    public enum SubDMode : int
+    {
+        ControlNet = 0,
+        Surface = 1,
+    }
+
     public class glTFBinExporterPlugin : Rhino.PlugIns.FileExportPlugIn
     {
         public static glTFBinExporterPlugin Instance { get; private set; }
@@ -30,11 +37,17 @@ namespace glTF_BinExporter
         {
             bool binary = GlTFUtils.IsFileGltfBinary(filename);
 
-            ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
-
-            if(optionsDlg.ShowModal() != Eto.Forms.DialogResult.Ok)
+            if(!UseSavedSettingsDontShowDialog)
             {
-                return WriteFileResult.Cancel;
+                ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
+
+                optionsDlg.RestorePosition();
+                Eto.Forms.DialogResult result = optionsDlg.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+
+                if (result != Eto.Forms.DialogResult.Ok)
+                {
+                    return WriteFileResult.Cancel;
+                }
             }
 
             glTFExportOptions exportOptions = glTFBinExporterPlugin.GetSavedOptions();
@@ -65,7 +78,8 @@ namespace glTF_BinExporter
         {
             ExportOptionsDialog exportOptionsDialog = new ExportOptionsDialog();
 
-            exportOptionsDialog.ShowModal();
+            exportOptionsDialog.RestorePosition();
+            exportOptionsDialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
         }
 
         #region Settings
@@ -106,6 +120,60 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(useDisplayColorForUnsetMaterialsKey, value);
         }
 
+        public const string SubDModeKey = "SubDMode";
+        public const SubDMode SubDModeDefault = SubDMode.Surface;
+
+        public static SubDMode SubDExportMode
+        {
+            get => (SubDMode)Instance.Settings.GetInteger(SubDModeKey, (int)SubDModeDefault);
+            set => Instance.Settings.SetInteger(SubDModeKey, (int)value);
+        }
+
+        public const string SubDLevelKey = "SubDLevel";
+        public const int SubDLevelDefault = 4;
+
+        public static int SubDLevel
+        {
+            get => Instance.Settings.GetInteger(SubDLevelKey, SubDLevelDefault);
+            set => Instance.Settings.SetInteger(SubDLevelKey, value);
+        }
+
+        public const string ExportTextureCoordinatesKey = "ExportTextureCoordinates";
+        public const bool ExportTextureCoordinatesDefault = true;
+
+        public static bool ExportTextureCoordinates
+        {
+            get => Instance.Settings.GetBool(ExportTextureCoordinatesKey, ExportTextureCoordinatesDefault);
+            set => Instance.Settings.SetBool(ExportTextureCoordinatesKey, value);
+        }
+
+        public const string ExportVertexNormalsKey = "ExportVertexNormals";
+        public const bool ExportVertexNormalsDefault = true;
+
+        public static bool ExportVertexNormals
+        {
+            get => Instance.Settings.GetBool(ExportVertexNormalsKey, ExportVertexNormalsDefault);
+            set => Instance.Settings.SetBool(ExportVertexNormalsKey, value);
+        }
+
+        public const string ExportVertexColorsKey = "ExportVertexColors";
+        public const bool ExportVertexColorsDefault = false;
+
+        public static bool ExportVertexColors
+        {
+            get => Instance.Settings.GetBool(ExportVertexColorsKey, ExportVertexColorsDefault);
+            set => Instance.Settings.SetBool(ExportVertexColorsKey, value);
+        }
+
+        private const string exportOpenMeshesKey = "ExportOpenMeshes";
+        public const bool ExportOpenMeshesDefault = true;
+
+        public static bool ExportOpenMeshes
+        {
+            get => Instance.Settings.GetBool(exportOpenMeshesKey, ExportOpenMeshesDefault);
+            set => Instance.Settings.SetBool(exportOpenMeshesKey, value);
+        }
+
         private const string dracoCompressionLevelKey = "DracoCompressionLevel";
         public const int DracoCompressionLevelDefault = 10;
         
@@ -142,6 +210,15 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetInteger(dracoQuantizationBitsTextureKey, value);
         }
 
+        private const string useSavedSettingsDontShowDialogKey = "UseSavedSettingsDontShowDialog";
+        public const bool UseSavedSettingsDontShowDialogDefault = false;
+
+        public static bool UseSavedSettingsDontShowDialog
+        {
+            get => Instance.Settings.GetBool(useSavedSettingsDontShowDialogKey, UseSavedSettingsDontShowDialogDefault);
+            set => Instance.Settings.SetBool(useSavedSettingsDontShowDialogKey, value);
+        }
+
         public static glTFExportOptions GetSavedOptions()
         {
             return new glTFExportOptions()
@@ -149,6 +226,15 @@ namespace glTF_BinExporter
                 MapRhinoZToGltfY = MapRhinoZToGltfY,
                 ExportMaterials = ExportMaterials,
                 UseDisplayColorForUnsetMaterials = UseDisplayColorForUnsetMaterials,
+
+                SubDExportMode = SubDExportMode,
+                SubDLevel = SubDLevel,
+
+                ExportTextureCoordinates = ExportTextureCoordinates,
+                ExportVertexNormals = ExportVertexNormals,
+                ExportOpenMeshes = ExportOpenMeshes,
+                ExportVertexColors = ExportVertexColors,
+
                 UseDracoCompression = UseDracoCompression,
                 DracoCompressionLevel = DracoCompressionLevel,
                 DracoQuantizationBitsPosition = DracoQuantizationBitsPosition,

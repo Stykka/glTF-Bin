@@ -25,11 +25,10 @@
     <None Remove="glTF\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RhinoCommon" Version="7.5.21100.3001" IncludeAssets="compile;build" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="RhinoCommon" Version="7.7.21160.5001" IncludeAssets="compile;build" />
   </ItemGroup>
-  
   <ItemGroup>
+    <ProjectReference Include="..\glTFExtensions\glTFExtensions.csproj" />
     <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
   </ItemGroup>
 

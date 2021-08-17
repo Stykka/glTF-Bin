@@ -113,7 +113,8 @@ namespace glTF_BinExporter
             {
                 ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
 
-                Eto.Forms.DialogResult result = optionsDlg.ShowModal();
+                optionsDlg.RestorePosition();
+                Eto.Forms.DialogResult result = optionsDlg.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
 
                 options = glTFBinExporterPlugin.GetSavedOptions();
 
@@ -133,30 +134,21 @@ namespace glTF_BinExporter
 
         public static bool DoExport(string fileName, glTFExportOptions options, bool binary, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects, Rhino.Render.LinearWorkflow workflow)
         {
-            try
-            {
-                RhinoDocGltfConverter converter = new RhinoDocGltfConverter(options, binary, rhinoObjects, workflow);
-                glTFLoader.Schema.Gltf gltf = converter.ConvertToGltf();
+            RhinoDocGltfConverter converter = new RhinoDocGltfConverter(options, binary, rhinoObjects, workflow);
+            glTFLoader.Schema.Gltf gltf = converter.ConvertToGltf();
 
-                if(binary)
-                {
-                    byte[] bytes = converter.GetBinaryBuffer();
-                    glTFLoader.Interface.SaveBinaryModel(gltf, bytes.Length == 0 ? null : bytes, fileName);
-                }
-                else
-                {
-                    glTFLoader.Interface.SaveModel(gltf, fileName);
-                }
-
-                RhinoApp.WriteLine("Successfully exported selected geometry to glTF(Binary).");
-                return true;
-            }
-            catch (Exception e)
+            if (binary)
             {
-                RhinoApp.WriteLine("ERROR: Failed exporting selected geometry to file.");
-                System.Diagnostics.Debug.WriteLine(e.Message);
-                return false;
+                byte[] bytes = converter.GetBinaryBuffer();
+                glTFLoader.Interface.SaveBinaryModel(gltf, bytes.Length == 0 ? null : bytes, fileName);
             }
+            else
+            {
+                glTFLoader.Interface.SaveModel(gltf, fileName);
+            }
+
+            RhinoApp.WriteLine("Successfully exported selected geometry to glTF(Binary).");
+            return true;
         }
 
     }
