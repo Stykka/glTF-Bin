@@ -14,7 +14,7 @@ namespace glTF_BinExporter
     public struct ObjectExportData
     {
         public Rhino.Geometry.Mesh[] Meshes;
-        public RenderMaterial RenderMaterial;
+        public RenderMaterial[] RenderMaterials;
         public RhinoObject Object;
     }
 
@@ -79,9 +79,9 @@ namespace glTF_BinExporter
 
             foreach(ObjectExportData exportData in sanitized)
             {
-                int? materialIndex = GetMaterial(exportData.RenderMaterial, exportData.Object);
+                int[] materialIndeces = GetMaterials(exportData.RenderMaterials, exportData.Object);
 
-                RhinoMeshGltfConverter meshConverter = new RhinoMeshGltfConverter(exportData, materialIndex, options, binary, dummy, binaryBuffer);
+                RhinoMeshGltfConverter meshConverter = new RhinoMeshGltfConverter(exportData, materialIndeces, options, binary, dummy, binaryBuffer);
                 int meshIndex = meshConverter.AddMesh();
 
                 glTFLoader.Schema.Node node = new glTFLoader.Schema.Node()
@@ -118,43 +118,54 @@ namespace glTF_BinExporter
             return binaryBuffer.ToArray();
         }
 
-        int? GetMaterial(RenderMaterial material, RhinoObject rhinoObject)
+        int[] GetMaterials(RenderMaterial[] materials, RhinoObject rhinoObject)
         {
-            if(!options.ExportMaterials)
+            int[] materialIndeces = new int[materials.Length];
+
+            for (int i = 0; i < materials.Length; i++)
             {
-                return null;
-            }
-            
-            if(material == null && options.UseDisplayColorForUnsetMaterials)
-            {
-                Color4f objectColor = GetObjectColor(rhinoObject);
-                return CreateSolidColorMaterial(objectColor);
-            }
-            else if(material == null)
-            {
-                material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
+                var material = materials[i];
+
+                if (!options.ExportMaterials)
+                {
+                    return null;
+                }
+
+                if (material == null && options.UseDisplayColorForUnsetMaterials)
+                {
+                    Color4f objectColor = GetObjectColor(rhinoObject);
+                    materialIndeces[i] = CreateSolidColorMaterial(objectColor, string.IsNullOrEmpty(rhinoObject.Name) ? rhinoObject.Id.ToString() : rhinoObject.Name);
+                    continue;
+                }
+                else if (material == null)
+                {
+                    material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
+                }
+
+                Guid materialId = material.Id;
+
+                if (!materialsMap.TryGetValue(materialId, out int materialIndex))
+                {
+                    RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
+                    materialIndex = materialConverter.AddMaterial();
+                    materialsMap.Add(materialId, materialIndex);
+                }
+
+                materialIndeces[i] = materialIndex;
             }
 
-            Guid materialId = material.Id;
-
-            if(!materialsMap.TryGetValue(materialId, out int materialIndex))
-            {
-                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
-                materialIndex = materialConverter.AddMaterial();
-                materialsMap.Add(materialId, materialIndex);
-            }
-
-            return materialIndex;
+            return materialIndeces;
         }
 
-        int CreateSolidColorMaterial(Color4f color)
+        int CreateSolidColorMaterial(Color4f color, string name)
         {
             glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
             {
                 PbrMetallicRoughness = new MaterialPbrMetallicRoughness()
                 {
                     BaseColorFactor = color.ToFloatArray(),
-                }
+                },
+                Name = name
             };
 
             return dummy.Materials.AddAndReturnIndex(material);
@@ -207,7 +218,7 @@ namespace glTF_BinExporter
 
             // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
             // First make sure the internal rhino mesh has been created
-            rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+            //rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
 
             // Then get the internal rhino meshes
             Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
@@ -221,6 +232,7 @@ namespace glTF_BinExporter
                     mesh.EnsurePrivateCopy();
                     validMeshes.Add(mesh);
                 }
+                else validMeshes.Add(null);
             }
 
             return validMeshes.ToArray();
@@ -273,7 +285,23 @@ namespace glTF_BinExporter
                     continue;
                 }
 
-                var mat = rhinoObject.RenderMaterial;
+                // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
+                // First make sure the internal rhino mesh has been created
+                rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+
+                var mats = new RenderMaterial[rhinoObject.MeshCount(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh)];
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    foreach (var component in rhinoObject.SubobjectMaterialComponents)
+                    {
+                        if (component.Index == i)
+                        {
+                            mats[i] = rhinoObject.GetRenderMaterial(component);
+                            break;
+                        }
+                    }
+                    if (mats[i] == null) mats[i] = rhinoObject.RenderMaterial;
+                }
 
                 var isValidGeometry = Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
 
@@ -286,7 +314,7 @@ namespace glTF_BinExporter
                         rhinoObjectsRes.Add(new ObjectExportData()
                         {
                             Meshes = meshes,
-                            RenderMaterial = mat,
+                            RenderMaterials = mats,
                             Object = rhinoObject,
                         });
                     }
@@ -315,7 +343,7 @@ namespace glTF_BinExporter
                             rhinoObjectsRes.Add(new ObjectExportData()
                             {
                                 Meshes = meshes,
-                                RenderMaterial = mat,
+                                RenderMaterials = mats,
                                 Object = item.rhinoObject,
                             });
                         }

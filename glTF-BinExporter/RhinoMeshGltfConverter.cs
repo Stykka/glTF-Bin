@@ -13,10 +13,10 @@ namespace glTF_BinExporter
 {
     class RhinoMeshGltfConverter
     {
-        public RhinoMeshGltfConverter(ObjectExportData exportData, int? materialIndex, glTFExportOptions options, bool binary, gltfSchemaDummy dummy, List<byte> binaryBuffer)
+        public RhinoMeshGltfConverter(ObjectExportData exportData, int[] materialIndeces, glTFExportOptions options, bool binary, gltfSchemaDummy dummy, List<byte> binaryBuffer)
         {
             this.exportData = exportData;
-            this.materialIndex = materialIndex;
+            this.materialIndeces = materialIndeces;
             this.options = options;
             this.binary = binary;
             this.dummy = dummy;
@@ -24,7 +24,7 @@ namespace glTF_BinExporter
         }
 
         private ObjectExportData exportData;
-        private int? materialIndex;
+        private int[] materialIndeces;
         private glTFExportOptions options = null;
         private bool binary = false;
         private gltfSchemaDummy dummy = null;
@@ -81,8 +81,11 @@ namespace glTF_BinExporter
         {
             List<glTFLoader.Schema.MeshPrimitive> primitives = new List<glTFLoader.Schema.MeshPrimitive>();
 
-            foreach(Mesh rhinoMesh in exportData.Meshes)
+            for (int i = 0; i < exportData.Meshes.Length; i++)
             {
+                if (exportData.Meshes[i] == null) continue;
+                var rhinoMesh = exportData.Meshes[i];
+
                 PreprocessMesh(rhinoMesh);
 
                 if(options.UseDracoCompression)
@@ -159,7 +162,7 @@ namespace glTF_BinExporter
                     primitive.Extensions.Add(Constants.DracoMeshCompressionExtensionTag, dracoCompressionObject);
                 }
 
-                primitive.Material = materialIndex;
+                if(materialIndeces != null) primitive.Material = materialIndeces[i];
 
                 primitives.Add(primitive);
             }
