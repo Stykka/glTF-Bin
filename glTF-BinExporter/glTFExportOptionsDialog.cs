@@ -16,6 +16,11 @@ namespace glTF_BinExporter
         private CheckBox exportMaterials = new CheckBox();
         private CheckBox useDisplayColorForUnsetMaterial = new CheckBox();
 
+        private GroupBox subdBox = new GroupBox();
+        private CheckBox useSubdControlNet = new CheckBox();
+        private Label subdLevelLabel = new Label();
+        private Slider subdLevel = new Slider();
+
         private CheckBox exportTextureCoordinates = new CheckBox();
         private CheckBox exportVertexNormals = new CheckBox();
         private CheckBox exportOpenMeshes = new CheckBox();
@@ -48,6 +53,28 @@ namespace glTF_BinExporter
 
             useDisplayColorForUnsetMaterial.Text = "Use display color for objects with no material set";
 
+            subdBox.Text = "SubD Meshing";
+
+            useSubdControlNet.Text = "Use control net";
+
+            subdLevelLabel.Text = "Subdivision level";
+
+            subdLevel.SnapToTick = true;
+            subdLevel.TickFrequency = 1;
+            subdLevel.MinValue = 1;
+            subdLevel.MaxValue = 5;
+            
+            subdBox.Content = new TableLayout()
+            {
+                Padding = DefaultPadding,
+                Spacing = DefaultSpacing,
+                Rows =
+                {
+                    new TableRow(useSubdControlNet, null),
+                    new TableRow(subdLevel, subdLevelLabel),
+                }
+            };
+
             exportTextureCoordinates.Text = "Export texture coordinates";
 
             exportVertexNormals.Text = "Export vertex normals";
@@ -75,6 +102,8 @@ namespace glTF_BinExporter
 
             useDracoCompressionCheck.CheckedChanged += UseDracoCompressionCheck_CheckedChanged;
             exportMaterials.CheckedChanged += ExportMaterials_CheckedChanged;
+
+            useSubdControlNet.CheckedChanged += UseSubdControlNet_CheckedChanged;
 
             cancelButton.Click += CancelButton_Click;
             okButton.Click += OkButton_Click;
@@ -129,6 +158,7 @@ namespace glTF_BinExporter
                     Spacing = DefaultSpacing,
                     Rows =
                     {
+                        new TableRow(subdBox),
                         new TableRow(exportTextureCoordinates),
                         new TableRow(exportVertexNormals),
                         new TableRow(exportOpenMeshes),
@@ -179,6 +209,12 @@ namespace glTF_BinExporter
 
             useDisplayColorForUnsetMaterial.Checked = glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials;
 
+            bool controlNet = glTFBinExporterPlugin.SubDExportMode == SubDMode.ControlNet;
+            useSubdControlNet.Checked = controlNet;
+            EnabledDisableSubDLevel(!controlNet);
+
+            subdLevel.Value = glTFBinExporterPlugin.SubDLevel;
+
             exportTextureCoordinates.Checked = glTFBinExporterPlugin.ExportTextureCoordinates;
             exportVertexNormals.Checked = glTFBinExporterPlugin.ExportVertexNormals;
             exportOpenMeshes.Checked = glTFBinExporterPlugin.ExportOpenMeshes;
@@ -201,6 +237,11 @@ namespace glTF_BinExporter
             glTFBinExporterPlugin.ExportMaterials = GetCheckboxValue(exportMaterials);
             glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials = GetCheckboxValue(useDisplayColorForUnsetMaterial);
 
+            bool controlNet = GetCheckboxValue(useSubdControlNet);
+            glTFBinExporterPlugin.SubDExportMode = controlNet ? SubDMode.ControlNet : SubDMode.Surface;
+
+            glTFBinExporterPlugin.SubDLevel = subdLevel.Value;
+
             glTFBinExporterPlugin.ExportTextureCoordinates = GetCheckboxValue(exportTextureCoordinates);
             glTFBinExporterPlugin.ExportVertexNormals = GetCheckboxValue(exportVertexNormals);
             glTFBinExporterPlugin.ExportOpenMeshes = GetCheckboxValue(exportOpenMeshes);
@@ -216,6 +257,11 @@ namespace glTF_BinExporter
         private bool GetCheckboxValue(CheckBox checkBox)
         {
             return checkBox.Checked.HasValue ? checkBox.Checked.Value : false;
+        }
+
+        private void EnabledDisableSubDLevel(bool enable)
+        {
+            subdLevel.Enabled = enable;
         }
 
         private void EnableDisableDracoControls(bool enable)
@@ -243,6 +289,12 @@ namespace glTF_BinExporter
         private void EnableDisableMaterialControls(bool enabled)
         {
             useDisplayColorForUnsetMaterial.Enabled = enabled;
+        }
+
+        private void UseSubdControlNet_CheckedChanged(object sender, EventArgs e)
+        {
+            bool controlNet = GetCheckboxValue(useSubdControlNet);
+            EnabledDisableSubDLevel(!controlNet);
         }
 
         private void CancelButton_Click(object sender, EventArgs e)
