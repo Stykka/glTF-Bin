@@ -39,7 +39,7 @@ namespace glTF_BinExporter
             // Prep
             glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
             {
-                Name = renderMaterial.Name,
+                Name = string.IsNullOrEmpty(renderMaterial.Name) ? renderMaterial.Id.ToString() : renderMaterial.Name,
                 PbrMetallicRoughness = new glTFLoader.Schema.MaterialPbrMetallicRoughness(),
             };
 
