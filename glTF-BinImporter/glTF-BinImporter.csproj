@@ -69,6 +69,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\glTFExtensions\glTFExtensions.csproj">
+      <Project>{ceb4c2bc-fc3a-4262-95f8-d481f5a1c730}</Project>
+      <Name>glTFExtensions</Name>
+    </ProjectReference>
     <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj">
       <Project>{4c88fa85-98f7-4e37-978c-1885d175b428}</Project>
       <Name>glTFLoader</Name>

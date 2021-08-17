@@ -91,8 +91,8 @@ namespace glTF_BinImporter
 
             foreach (var primitive in mesh.Primitives)
             {
-                Rhino.Geometry.Mesh rhinoMesh = ConvertPrimtive(primitive);
-
+                Rhino.Geometry.Mesh rhinoMesh = GetMesh(primitive);
+                
                 if(rhinoMesh == null)
                 {
                     continue;
@@ -111,6 +111,40 @@ namespace glTF_BinImporter
             }
 
             return meshHolder;
+        }
+
+        Rhino.Geometry.Mesh GetMesh(glTFLoader.Schema.MeshPrimitive primitive)
+        {
+            if (primitive.Extensions != null && primitive.Extensions.TryGetValue("KHR_draco_mesh_compression", out object value))
+            {
+                return ConvertDraco(value.ToString());
+            }
+            else
+            {
+                return ConvertPrimtive(primitive);
+            }
+        }
+
+        Rhino.Geometry.Mesh ConvertDraco(string text)
+        {
+            var khr_draco = Newtonsoft.Json.JsonConvert.DeserializeObject<glTFExtensions.KHR_draco_mesh_compression>(text);
+
+            if (khr_draco == null)
+            {
+                return null;
+            }
+
+            glTFLoader.Schema.BufferView view = gltf.BufferViews[khr_draco.BufferView];
+
+            byte[] buffer = converter.GetBuffer(view.Buffer);
+
+            int offset = view.ByteOffset;
+            int length = view.ByteLength;
+
+            byte[] dracoBytes = new byte[length];
+            Array.Copy(buffer, offset, dracoBytes, 0, length);
+
+            return Rhino.FileIO.DracoCompression.DecompressByteArray(dracoBytes) as Rhino.Geometry.Mesh;
         }
 
         Rhino.Geometry.Mesh ConvertPrimtive(glTFLoader.Schema.MeshPrimitive primitive)
