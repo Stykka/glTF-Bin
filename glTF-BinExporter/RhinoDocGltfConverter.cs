@@ -183,6 +183,27 @@ namespace glTF_BinExporter
 
                 return new Rhino.Geometry.Mesh[] { meshObj.MeshGeometry };
             }
+            else if(rhinoObject.ObjectType == ObjectType.SubD)
+            {
+                SubDObject subdObject = rhinoObject as SubDObject;
+
+                Rhino.Geometry.SubD subd = subdObject.Geometry as Rhino.Geometry.SubD;
+
+                Rhino.Geometry.Mesh mesh = null;
+
+                if (options.SubDExportMode == SubDMode.ControlNet)
+                {
+                    mesh = Rhino.Geometry.Mesh.CreateFromSubDControlNet(subd);
+                }
+                else
+                {
+                    int level = options.SubDLevel;
+
+                    mesh = Rhino.Geometry.Mesh.CreateFromSubD(subd, level);
+                }
+
+                return new Rhino.Geometry.Mesh[] { mesh };
+            }
 
             // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
             // First make sure the internal rhino mesh has been created
@@ -202,7 +223,7 @@ namespace glTF_BinExporter
                 }
             }
 
-            return validMeshes.Count == 0 ? new Rhino.Geometry.Mesh[] { } : validMeshes.ToArray();
+            return validMeshes.ToArray();
         }
 
         public bool MeshIsValidForExport(Rhino.Geometry.Mesh mesh)
@@ -302,7 +323,7 @@ namespace glTF_BinExporter
                 }
                 else
                 {
-                    RhinoApp.WriteLine("Unknown geo type encountered.");
+                    RhinoApp.WriteLine("Unknown geometry type encountered.");
                 }
             }
 

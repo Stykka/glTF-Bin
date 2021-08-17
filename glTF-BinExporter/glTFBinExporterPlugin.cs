@@ -8,6 +8,12 @@ using System.IO;
 
 namespace glTF_BinExporter
 {
+    public enum SubDMode : int
+    {
+        ControlNet = 0,
+        Surface = 1,
+    }
+
     public class glTFBinExporterPlugin : Rhino.PlugIns.FileExportPlugIn
     {
         public static glTFBinExporterPlugin Instance { get; private set; }
@@ -114,6 +120,24 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(useDisplayColorForUnsetMaterialsKey, value);
         }
 
+        public const string SubDModeKey = "SubDMode";
+        public const SubDMode SubDModeDefault = SubDMode.Surface;
+
+        public static SubDMode SubDExportMode
+        {
+            get => (SubDMode)Instance.Settings.GetInteger(SubDModeKey, (int)SubDModeDefault);
+            set => Instance.Settings.SetInteger(SubDModeKey, (int)value);
+        }
+
+        public const string SubDLevelKey = "SubDLevel";
+        public const int SubDLevelDefault = 4;
+
+        public static int SubDLevel
+        {
+            get => Instance.Settings.GetInteger(SubDLevelKey, SubDLevelDefault);
+            set => Instance.Settings.SetInteger(SubDLevelKey, value);
+        }
+
         public const string ExportTextureCoordinatesKey = "ExportTextureCoordinates";
         public const bool ExportTextureCoordinatesDefault = true;
 
@@ -202,6 +226,9 @@ namespace glTF_BinExporter
                 MapRhinoZToGltfY = MapRhinoZToGltfY,
                 ExportMaterials = ExportMaterials,
                 UseDisplayColorForUnsetMaterials = UseDisplayColorForUnsetMaterials,
+
+                SubDExportMode = SubDExportMode,
+                SubDLevel = SubDLevel,
 
                 ExportTextureCoordinates = ExportTextureCoordinates,
                 ExportVertexNormals = ExportVertexNormals,

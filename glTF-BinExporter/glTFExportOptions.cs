@@ -12,6 +12,9 @@ namespace glTF_BinExporter
         public bool ExportMaterials = glTFBinExporterPlugin.ExportMaterialsDefault;
         public bool UseDisplayColorForUnsetMaterials = glTFBinExporterPlugin.UseDisplayColorForUnsetMaterialsDefault;
 
+        public SubDMode SubDExportMode = glTFBinExporterPlugin.SubDModeDefault;
+        public int SubDLevel = glTFBinExporterPlugin.SubDLevelDefault;
+
         public bool ExportTextureCoordinates = glTFBinExporterPlugin.ExportTextureCoordinatesDefault;
         public bool ExportVertexNormals = glTFBinExporterPlugin.ExportVertexNormalsDefault;
         public bool ExportOpenMeshes = glTFBinExporterPlugin.ExportOpenMeshesDefault;
