@@ -45,5 +45,21 @@ namespace glTF_BinImporter
             return Math.Max(Math.Min(max, value), min);
         }
 
+        public static Rhino.Display.Color4f UnapplyGamma(Rhino.Display.Color4f color, float gamma = 2.2f)
+        {
+            if (Math.Abs(gamma - 1.0f) > float.Epsilon)
+            {
+                double inv = 1.0f / gamma;
+
+                float r = (float)Math.Pow(color.R, inv);
+                float g = (float)Math.Pow(color.G, inv);
+                float b = (float)Math.Pow(color.B, inv);
+
+                return new Rhino.Display.Color4f(r, g, b, color.A);
+            }
+
+            return color;
+        }
+
     }
 }

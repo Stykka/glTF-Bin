@@ -36,13 +36,33 @@ namespace glTF_BinImporter
 
         List<System.Drawing.Bitmap> images = new List<System.Drawing.Bitmap>();
 
-        Dictionary<int, Rhino.Render.RenderTexture> rgbTextures = new Dictionary<int, Rhino.Render.RenderTexture>();
-
         Dictionary<int, RhinoGltfMetallicRoughnessConverter> metalRoughnessTextures = new Dictionary<int, RhinoGltfMetallicRoughnessConverter>(); 
 
         List<Rhino.Render.RenderMaterial> materials = new List<Rhino.Render.RenderMaterial>();
 
         List<GltfMeshHolder> meshHolders = new List<GltfMeshHolder>();
+
+        HashSet<string> Names = new HashSet<string>();
+
+        int nameCounter = 0;
+
+        public string GetUniqueName(string name)
+        {
+            if(string.IsNullOrEmpty(name))
+            {
+                name = "Unnamed";
+            }
+
+            while (Names.Contains(name))
+            {
+                name = name + "-" + nameCounter.ToString();
+                nameCounter++;
+            }
+
+            Names.Add(name);
+
+            return name;
+        }
 
         public bool Convert()
         {
@@ -141,9 +161,23 @@ namespace glTF_BinImporter
 
         Rhino.Geometry.Transform GetNodeTransform(glTFLoader.Schema.Node node)
         {
+            Rhino.Geometry.Transform matrixTransform = GetMatrixTransform(node);
+
+            if(!matrixTransform.IsIdentity)
+            {
+                return matrixTransform;
+            }
+            else
+            {
+                return GetTrsTransform(node);
+            }
+        }
+
+        public Rhino.Geometry.Transform GetMatrixTransform(glTFLoader.Schema.Node node)
+        {
             Rhino.Geometry.Transform xform = Rhino.Geometry.Transform.Identity;
 
-            if(node.Matrix != null)
+            if (node.Matrix != null)
             {
                 xform.M00 = node.Matrix[0];
                 xform.M01 = node.Matrix[1];
@@ -164,62 +198,76 @@ namespace glTF_BinImporter
 
                 xform = xform.Transpose();
             }
-            else
-            {
-                Rhino.Geometry.Vector3d translation = Rhino.Geometry.Vector3d.Zero;
-
-                if (node.Translation != null && node.Translation.Length == 3)
-                {
-                    translation.X = node.Translation[0];
-                    translation.Y = node.Translation[1];
-                    translation.Z = node.Translation[2];
-                }
-
-                Rhino.Geometry.Quaternion rotation = Rhino.Geometry.Quaternion.Identity;
-
-                if (node.Rotation != null && node.Rotation.Length == 4)
-                {
-                    rotation.A = node.Rotation[3];
-                    rotation.B = node.Rotation[0];
-                    rotation.C = node.Rotation[1];
-                    rotation.D = node.Rotation[2];
-                }
-
-                Rhino.Geometry.Vector3d scaling = Rhino.Geometry.Vector3d.Zero;
-
-                if (node.Scale != null && node.Scale.Length == 3)
-                {
-                    scaling.X = node.Scale[0];
-                    scaling.Y = node.Scale[1];
-                    scaling.Z = node.Scale[2];
-                }
-
-                Rhino.Geometry.Transform translationTransform = Rhino.Geometry.Transform.Translation(translation);
-                
-                rotation.GetRotation(out double angle, out Rhino.Geometry.Vector3d axis);
-
-                Rhino.Geometry.Transform rotationTransform = Rhino.Geometry.Transform.Rotation(angle, axis, Rhino.Geometry.Point3d.Origin);
-
-                Rhino.Geometry.Transform scalingTransform = Rhino.Geometry.Transform.Scale(Rhino.Geometry.Plane.WorldXY, scaling.X, scaling.Y, scaling.Z);
-
-                xform = translationTransform * rotationTransform * scalingTransform;
-            }
 
             return xform;
         }
 
-        public Rhino.Render.RenderTexture GetRgbTexture(int imageIndex)
+        public Rhino.Geometry.Transform GetTrsTransform(glTFLoader.Schema.Node node)
         {
-            if(!rgbTextures.TryGetValue(imageIndex, out Rhino.Render.RenderTexture texture))
+            Rhino.Geometry.Vector3d translation = Rhino.Geometry.Vector3d.Zero;
+
+            if (node.Translation != null && node.Translation.Length == 3)
             {
-                System.Drawing.Bitmap bmp = images[imageIndex];
-
-                texture = Rhino.Render.RenderTexture.NewBitmapTexture(bmp, doc);
-
-                rgbTextures.Add(imageIndex, texture);
+                translation.X = node.Translation[0];
+                translation.Y = node.Translation[1];
+                translation.Z = node.Translation[2];
             }
 
-            return texture;
+            Rhino.Geometry.Quaternion rotation = Rhino.Geometry.Quaternion.Identity;
+
+            if (node.Rotation != null && node.Rotation.Length == 4)
+            {
+                rotation.A = node.Rotation[3];
+                rotation.B = node.Rotation[0];
+                rotation.C = node.Rotation[1];
+                rotation.D = node.Rotation[2];
+            }
+
+            Rhino.Geometry.Vector3d scaling = Rhino.Geometry.Vector3d.Zero;
+
+            if (node.Scale != null && node.Scale.Length == 3)
+            {
+                scaling.X = node.Scale[0];
+                scaling.Y = node.Scale[1];
+                scaling.Z = node.Scale[2];
+            }
+
+            Rhino.Geometry.Transform translationTransform = Rhino.Geometry.Transform.Translation(translation);
+
+            rotation.GetRotation(out double angle, out Rhino.Geometry.Vector3d axis);
+
+            Rhino.Geometry.Transform rotationTransform = Rhino.Geometry.Transform.Rotation(angle, axis, Rhino.Geometry.Point3d.Origin);
+
+            Rhino.Geometry.Transform scalingTransform = Rhino.Geometry.Transform.Scale(Rhino.Geometry.Plane.WorldXY, scaling.X, scaling.Y, scaling.Z);
+
+            return translationTransform * rotationTransform * scalingTransform;
+        }
+
+        public Rhino.Render.RenderTexture GetRenderTexture(int textureIndex)
+        {
+            Rhino.Render.RenderTexture renderTexture = null;
+
+            if (gltf.Textures != null && textureIndex < gltf.Textures.Length && textureIndex >= 0)
+            {
+                glTFLoader.Schema.Texture texture = gltf.Textures[textureIndex];
+
+                if (texture.Source != null)
+                {
+                    int imageIndex = texture.Source.Value;
+
+                    System.Drawing.Bitmap bmp = images[imageIndex];
+
+                    renderTexture = Rhino.Render.RenderTexture.NewBitmapTexture(bmp, doc);
+
+                    renderTexture.BeginChange(Rhino.Render.RenderContent.ChangeContexts.Program);
+
+                    renderTexture.Name = GetUniqueName(texture.Name);
+
+                    renderTexture.EndChange();
+                }
+            }
+
+            return renderTexture;
         }
 
         public RhinoGltfMetallicRoughnessConverter GetMetallicRoughnessTexture(int imageIndex)
