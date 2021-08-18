@@ -173,7 +173,7 @@ namespace glTF_BinImporter
         {
             glTFExtensions.KHR_materials_transmission transmission = Newtonsoft.Json.JsonConvert.DeserializeObject<glTFExtensions.KHR_materials_transmission>(text);
 
-            if (transmission != null)
+            if (transmission == null)
             {
                 return;
             }
