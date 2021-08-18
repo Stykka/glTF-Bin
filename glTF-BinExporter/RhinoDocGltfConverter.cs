@@ -51,7 +51,7 @@ namespace glTF_BinExporter
         public Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
-            dummy.Scenes.Add(new gltfSchemaSceneDummy());
+            dummy.Scenes.Add(new gltfSchemaSceneDummy() { Name = RhinoDoc.ActiveDoc.Name });
 
             dummy.Asset = new Asset()
             {
@@ -92,7 +92,9 @@ namespace glTF_BinExporter
 
                 int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
 
-                dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
+                //dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
+                AddToLayer(RhinoDoc.ActiveDoc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
+
             }
 
             if(binary && binaryBuffer.Count > 0)
@@ -106,6 +108,28 @@ namespace glTF_BinExporter
             }
 
             return dummy.ToSchemaGltf();
+        }
+
+        Dictionary<int, Node> Layers = new Dictionary<int, Node>();
+
+        private void AddToLayer(Layer layer, int child)
+        {
+            if(Layers.TryGetValue(layer.Index, out Node node))
+            {
+                if (node.Children == null) node.Children = new int[1] { child };
+                else node.Children = node.Children.Append(child).ToArray();
+            }
+            else
+            {
+                node = new Node();
+                node.Name = layer.Name;
+                node.Children = new int[1] { child };
+                Layers.Add(layer.Index, node);
+                int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
+                Layer parentLayer = RhinoDoc.ActiveDoc.Layers.FindId(layer.ParentLayerId);
+                if (parentLayer == null) dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
+                else AddToLayer(parentLayer, nodeIndex);
+            }
         }
 
         public string GetObjectName(RhinoObject rhinoObject)
