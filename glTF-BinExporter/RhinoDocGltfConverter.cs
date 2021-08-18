@@ -369,6 +369,7 @@ namespace glTF_BinExporter
         {
             var textureMappingIndeces = rhinoObject.GetTextureChannels();
             Array.Sort(textureMappingIndeces);
+            if (textureMappingIndeces.Length == 0) return new TextureMapping[0];
             var textureMappings = new TextureMapping[textureMappingIndeces.Max()+1];
             int j = 0;
             for (int i = 0; i < textureMappings.Length; i++)
