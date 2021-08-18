@@ -35,19 +35,19 @@ namespace glTF_BinImporter
             {
                 Rhino.Display.Color4f baseColor = material.PbrMetallicRoughness.BaseColorFactor.ToColor4f();
 
-                baseColor = GltfUtils.UnapplyGamma(baseColor);
-
-                pbr.Fields.Set(PhysicallyBased.BaseColor, baseColor);
-
                 if(material.PbrMetallicRoughness.BaseColorTexture != null)
                 {
                     int index = material.PbrMetallicRoughness.BaseColorTexture.Index;
 
-                    RenderTexture texture = converter.GetRenderTexture(index);
+                    RenderTexture texture = converter.GetRenderTexture(index, baseColor);
 
                     pbr.SetChild(texture, Rhino.Render.ParameterNames.PhysicallyBased.BaseColor);
                     pbr.SetChildSlotOn(Rhino.Render.ParameterNames.PhysicallyBased.BaseColor, true, RenderContent.ChangeContexts.Program);
                 }
+
+                baseColor = GltfUtils.UnapplyGamma(baseColor);
+
+                pbr.Fields.Set(PhysicallyBased.BaseColor, baseColor);
 
                 double roughness = material.PbrMetallicRoughness.RoughnessFactor;
 

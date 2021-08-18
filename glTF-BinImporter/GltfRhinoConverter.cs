@@ -245,8 +245,70 @@ namespace glTF_BinImporter
 
         public Rhino.Render.RenderTexture GetRenderTexture(int textureIndex)
         {
-            Rhino.Render.RenderTexture renderTexture = null;
+            System.Drawing.Bitmap bmp = GetTextureBitmap(textureIndex, out string name);
 
+            if(bmp == null)
+            {
+                return null;
+            }
+
+            Rhino.Render.RenderTexture renderTexture = Rhino.Render.RenderTexture.NewBitmapTexture(bmp, doc);
+
+            renderTexture.BeginChange(Rhino.Render.RenderContent.ChangeContexts.Program);
+
+            renderTexture.Name = name;
+
+            renderTexture.EndChange();
+
+            return renderTexture;
+        }
+
+
+        public Rhino.Render.RenderTexture GetRenderTexture(int textureIndex, Rhino.Display.Color4f factor)
+        {
+            System.Drawing.Bitmap bmp = GetTextureBitmap(textureIndex, out string name);
+
+            if (bmp == null)
+            {
+                return null;
+            }
+
+            int width = bmp.Width;
+            int height = bmp.Height;
+
+
+            System.Drawing.Bitmap resolvedBmp = new System.Drawing.Bitmap(width, height);
+
+            for(int i = 0; i < width; i++)
+            {
+                for(int j = 0; j < height; j++)
+                {
+                    Rhino.Display.Color4f colorAt = new Rhino.Display.Color4f(bmp.GetPixel(i, j));
+
+                    float r = GltfUtils.Clamp(colorAt.R * factor.R, 0.0f, 1.0f);
+                    float g = GltfUtils.Clamp(colorAt.G * factor.G, 0.0f, 1.0f);
+                    float b = GltfUtils.Clamp(colorAt.B * factor.B, 0.0f, 1.0f);
+                    float a = GltfUtils.Clamp(colorAt.A * factor.A, 0.0f, 1.0f);
+
+                    Rhino.Display.Color4f colorFinal = new Rhino.Display.Color4f(r, g, b, a);
+
+                    resolvedBmp.SetPixel(i, j, colorFinal.AsSystemColor());
+                }
+            }
+
+            Rhino.Render.RenderTexture renderTexture = Rhino.Render.RenderTexture.NewBitmapTexture(resolvedBmp, doc);
+
+            renderTexture.BeginChange(Rhino.Render.RenderContent.ChangeContexts.Program);
+
+            renderTexture.Name = name;
+
+            renderTexture.EndChange();
+
+            return renderTexture;
+        }
+
+        System.Drawing.Bitmap GetTextureBitmap(int textureIndex, out string name)
+        {
             if (gltf.Textures != null && textureIndex < gltf.Textures.Length && textureIndex >= 0)
             {
                 glTFLoader.Schema.Texture texture = gltf.Textures[textureIndex];
@@ -255,19 +317,14 @@ namespace glTF_BinImporter
                 {
                     int imageIndex = texture.Source.Value;
 
-                    System.Drawing.Bitmap bmp = images[imageIndex];
+                    name = GetUniqueName(texture.Name);
 
-                    renderTexture = Rhino.Render.RenderTexture.NewBitmapTexture(bmp, doc);
-
-                    renderTexture.BeginChange(Rhino.Render.RenderContent.ChangeContexts.Program);
-
-                    renderTexture.Name = GetUniqueName(texture.Name);
-
-                    renderTexture.EndChange();
+                    return images[imageIndex];
                 }
             }
 
-            return renderTexture;
+            name = "";
+            return null;
         }
 
         public RhinoGltfMetallicRoughnessConverter GetMetallicRoughnessTexture(int imageIndex)
