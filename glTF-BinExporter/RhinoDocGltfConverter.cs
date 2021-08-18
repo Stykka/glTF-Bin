@@ -51,7 +51,7 @@ namespace glTF_BinExporter
         public Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
-            dummy.Scenes.Add(new gltfSchemaSceneDummy() { Name = RhinoDoc.ActiveDoc.Name });
+            dummy.Scenes.Add(new gltfSchemaSceneDummy());
 
             dummy.Asset = new Asset()
             {
@@ -92,8 +92,8 @@ namespace glTF_BinExporter
 
                 int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
 
-                //dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
-                AddToLayer(RhinoDoc.ActiveDoc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
+                if(options.ExportLayers)AddToLayer(RhinoDoc.ActiveDoc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
+                else dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
 
             }
 
