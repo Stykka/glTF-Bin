@@ -47,15 +47,15 @@ namespace glTF_BinImporter
 
                 baseColor = GltfUtils.UnapplyGamma(baseColor);
 
-                pbr.Fields.Set(PhysicallyBased.BaseColor, baseColor);
+                pbr.SetParameter(PhysicallyBased.BaseColor, baseColor);
 
                 double roughness = material.PbrMetallicRoughness.RoughnessFactor;
 
-                pbr.Fields.Set(PhysicallyBased.Roughness, roughness);
+                pbr.SetParameter(PhysicallyBased.Roughness, roughness);
 
                 double metallic = material.PbrMetallicRoughness.MetallicFactor;
 
-                pbr.Fields.Set(PhysicallyBased.Metallic, metallic);
+                pbr.SetParameter(PhysicallyBased.Metallic, metallic);
 
                 if(material.PbrMetallicRoughness.MetallicRoughnessTexture != null)
                 {
@@ -81,7 +81,7 @@ namespace glTF_BinImporter
 
             emissionColor = GltfUtils.UnapplyGamma(emissionColor);
 
-            pbr.Fields.Set(PhysicallyBased.Emission, emissionColor);
+            pbr.SetParameter(PhysicallyBased.Emission, emissionColor);
 
             if (material.EmissiveTexture != null)
             {
@@ -107,18 +107,25 @@ namespace glTF_BinImporter
                 pbr.SetChildSlotOn(PhysicallyBased.Bump, true, RenderContent.ChangeContexts.Program);
             }
 
+            string clearcoatText = "";
+            string transmissionText = "";
+
             if(material.Extensions != null)
             {
                 if(material.Extensions.TryGetValue("KHR_materials_clearcoat", out object clearcoatValue))
                 {
-                    HandleClearcoat(clearcoatValue.ToString(), pbr);
+                    clearcoatText = clearcoatValue.ToString();
                 }
 
                 if(material.Extensions.TryGetValue("KHR_materials_transmission", out object transmissionValue))
                 {
-                    HandleTransmission(transmissionValue.ToString(), pbr);
+                    transmissionText = transmissionValue.ToString();
                 }
             }
+
+            HandleClearcoat(clearcoatText, pbr);
+
+            HandleTransmission(transmissionText, pbr);
 
             pbr.EndChange();
 
@@ -137,35 +144,39 @@ namespace glTF_BinImporter
 
             if (clearcoat == null)
             {
-                return;
+                pbr.SetParameter(PhysicallyBased.Clearcoat, 0.0);
+
+                pbr.SetParameter(PhysicallyBased.ClearcoatRoughness, 0.0);
             }
-
-            if(clearcoat.ClearcoatTexture != null)
+            else
             {
-                RenderTexture clearcoatTexture = converter.GetRenderTexture(clearcoat.ClearcoatTexture.Index);
+                if (clearcoat.ClearcoatTexture != null)
+                {
+                    RenderTexture clearcoatTexture = converter.GetRenderTexture(clearcoat.ClearcoatTexture.Index);
 
-                pbr.SetChild(clearcoatTexture, PhysicallyBased.Clearcoat);
-                pbr.SetChildSlotOn(PhysicallyBased.Clearcoat, true, RenderContent.ChangeContexts.Program);
-            }
+                    pbr.SetChild(clearcoatTexture, PhysicallyBased.Clearcoat);
+                    pbr.SetChildSlotOn(PhysicallyBased.Clearcoat, true, RenderContent.ChangeContexts.Program);
+                }
 
-            pbr.Fields.Set(PhysicallyBased.Clearcoat, clearcoat.ClearcoatFactor);
+                pbr.SetParameter(PhysicallyBased.Clearcoat, clearcoat.ClearcoatFactor);
 
-            if(clearcoat.ClearcoatRoughnessTexture != null)
-            {
-                RenderTexture clearcoatRoughnessTexture = converter.GetRenderTexture(clearcoat.ClearcoatRoughnessTexture.Index);
+                if (clearcoat.ClearcoatRoughnessTexture != null)
+                {
+                    RenderTexture clearcoatRoughnessTexture = converter.GetRenderTexture(clearcoat.ClearcoatRoughnessTexture.Index);
 
-                pbr.SetChild(clearcoatRoughnessTexture, PhysicallyBased.ClearcoatRoughness);
-                pbr.SetChildSlotOn(PhysicallyBased.ClearcoatRoughness, true, RenderContent.ChangeContexts.Program);
-            }
+                    pbr.SetChild(clearcoatRoughnessTexture, PhysicallyBased.ClearcoatRoughness);
+                    pbr.SetChildSlotOn(PhysicallyBased.ClearcoatRoughness, true, RenderContent.ChangeContexts.Program);
+                }
 
-            pbr.Fields.Set(PhysicallyBased.ClearcoatRoughness, clearcoat.ClearcoatRoughnessFactor);
+                pbr.SetParameter(PhysicallyBased.ClearcoatRoughness, clearcoat.ClearcoatRoughnessFactor);
 
-            if(clearcoat.ClearcoatNormalTexture != null)
-            {
-                RenderTexture clearcoatNormalTexture = converter.GetRenderTexture(clearcoat.ClearcoatNormalTexture.Index);
+                if (clearcoat.ClearcoatNormalTexture != null)
+                {
+                    RenderTexture clearcoatNormalTexture = converter.GetRenderTexture(clearcoat.ClearcoatNormalTexture.Index);
 
-                pbr.SetChild(clearcoatNormalTexture, PhysicallyBased.ClearcoatBump);
-                pbr.SetChildSlotOn(PhysicallyBased.ClearcoatBump, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChild(clearcoatNormalTexture, PhysicallyBased.ClearcoatBump);
+                    pbr.SetChildSlotOn(PhysicallyBased.ClearcoatBump, true, RenderContent.ChangeContexts.Program);
+                }
             }
         }
 
@@ -175,18 +186,20 @@ namespace glTF_BinImporter
 
             if (transmission == null)
             {
-                return;
+                pbr.SetParameter(PhysicallyBased.Opacity, 1.0);
             }
-
-            if(transmission.TransmissionTexture != null)
+            else
             {
-                RenderTexture transmissionTexture = converter.GetRenderTexture(transmission.TransmissionTexture.Index);
+                if (transmission.TransmissionTexture != null)
+                {
+                    RenderTexture transmissionTexture = converter.GetRenderTexture(transmission.TransmissionTexture.Index);
 
-                pbr.SetChild(transmissionTexture, PhysicallyBased.Opacity);
-                pbr.SetChildSlotOn(PhysicallyBased.Opacity, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChild(transmissionTexture, PhysicallyBased.Opacity);
+                    pbr.SetChildSlotOn(PhysicallyBased.Opacity, true, RenderContent.ChangeContexts.Program);
+                }
+
+                pbr.SetParameter(PhysicallyBased.Opacity, 1.0 - transmission.TransmissionFactor);
             }
-
-            pbr.Fields.Set(PhysicallyBased.Opacity, transmission.TransmissionFactor);
         }
 
     }
