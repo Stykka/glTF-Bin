@@ -109,6 +109,7 @@ namespace glTF_BinImporter
 
             string clearcoatText = "";
             string transmissionText = "";
+            string iorText = "";
 
             if(material.Extensions != null)
             {
@@ -121,11 +122,18 @@ namespace glTF_BinImporter
                 {
                     transmissionText = transmissionValue.ToString();
                 }
+
+                if(material.Extensions.TryGetValue("KHR_materials_ior", out object iorValue))
+                {
+                    iorText = iorValue.ToString();
+                }
             }
 
             HandleClearcoat(clearcoatText, pbr);
 
             HandleTransmission(transmissionText, pbr);
+
+            HandleIor(iorText, pbr);
 
             pbr.EndChange();
 
@@ -199,6 +207,16 @@ namespace glTF_BinImporter
                 }
 
                 pbr.SetParameter(PhysicallyBased.Opacity, 1.0 - transmission.TransmissionFactor);
+            }
+        }
+
+        void HandleIor(string text, RenderMaterial pbr)
+        {
+            glTFExtensions.KHR_materials_ior ior = Newtonsoft.Json.JsonConvert.DeserializeObject<glTFExtensions.KHR_materials_ior>(text);
+
+            if(ior != null)
+            {
+                pbr.SetParameter(PhysicallyBased.OpacityIor, ior.Ior);
             }
         }
 
