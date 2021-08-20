@@ -8,6 +8,7 @@ using Rhino;
 using glTFLoader.Schema;
 using Rhino.Render;
 using Rhino.Display;
+using Rhino.Geometry;
 
 namespace glTF_BinExporter
 {
@@ -15,7 +16,8 @@ namespace glTF_BinExporter
     {
         public Rhino.Geometry.Mesh[] Meshes;
         public RenderMaterial[] RenderMaterials;
-        public TextureMapping[] TextureMappings; 
+        public TextureMapping[] TextureMappings;
+        public Transform ObjectTransform;
         public RhinoObject Object;
     }
 
@@ -360,7 +362,8 @@ namespace glTF_BinExporter
 
                 if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
                 {
-                    TextureMapping[] textureMappings = GetTextureMappings(rhinoObject);
+                    Transform objectTransform;
+                    TextureMapping[] textureMappings = GetTextureMappings(rhinoObject, out objectTransform);
 
                     var meshes = GetMeshes(rhinoObject);
 
@@ -371,6 +374,7 @@ namespace glTF_BinExporter
                             Meshes = meshes,
                             RenderMaterials = mats,
                             TextureMappings = textureMappings,
+                            ObjectTransform = objectTransform,
                             Object = rhinoObject,
                         });
                     }
@@ -387,7 +391,8 @@ namespace glTF_BinExporter
                     // Transform the exploded geo into its correct place
                     foreach (var item in objects.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
                     {
-                        var textureMappings = GetTextureMappings(item.rhinoObject);
+                        Transform objectTransform;
+                        var textureMappings = GetTextureMappings(item.rhinoObject, out objectTransform);
 
                         var meshes = GetMeshes(item.rhinoObject);
 
@@ -403,6 +408,7 @@ namespace glTF_BinExporter
                                 Meshes = meshes,
                                 RenderMaterials = mats,
                                 TextureMappings = textureMappings,
+                                ObjectTransform = objectTransform,
                                 Object = item.rhinoObject,
                             });
                         }
@@ -417,18 +423,24 @@ namespace glTF_BinExporter
             return rhinoObjectsRes;
         }
 
-        private TextureMapping[] GetTextureMappings(RhinoObject rhinoObject)
+        private TextureMapping[] GetTextureMappings(RhinoObject rhinoObject, out Transform objectTransform)
         {
+            objectTransform = Transform.Unset;
+
             var textureMappingIndeces = rhinoObject.GetTextureChannels();
             Array.Sort(textureMappingIndeces);
-            if (textureMappingIndeces.Length == 0) return new TextureMapping[0];
+            if (textureMappingIndeces.Length == 0)
+            {
+                return new TextureMapping[0];
+            }
+
             var textureMappings = new TextureMapping[textureMappingIndeces.Max()+1];
             int j = 0;
             for (int i = 0; i < textureMappings.Length; i++)
             {
                 if (textureMappingIndeces[j] == i)
                 {
-                    textureMappings[i] = rhinoObject.GetTextureMapping(textureMappingIndeces[j]);
+                    textureMappings[i] = rhinoObject.GetTextureMapping(textureMappingIndeces[j], out objectTransform);
                     j++;
                 }
             }

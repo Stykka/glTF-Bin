@@ -146,7 +146,7 @@ namespace glTF_BinExporter
                         if(textureMappings[j] == null) primitive.Attributes.Add("TEXCOORD_" + j, textureCoordinatesAccessorIdx);
                         else
                         {
-                            rhinoMesh.SetTextureCoordinates(textureMappings[j], Transform.Identity, false);
+                            rhinoMesh.SetTextureCoordinates(textureMappings[j], exportData.ObjectTransform, false);
                             int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
                             primitive.Attributes.Add("TEXCOORD_" + j, newTextureCoordinatesAccessorIdx);
                         }
