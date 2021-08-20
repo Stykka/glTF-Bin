@@ -89,6 +89,7 @@ namespace glTF_BinExporter
                 }
 
                 var rhinoMesh = exportData.Meshes[i];
+                var textureMappings = exportData.TextureMappings;
 
                 PreprocessMesh(rhinoMesh);
 
@@ -103,6 +104,16 @@ namespace glTF_BinExporter
                 bool exportNormals = ExportNormals(rhinoMesh);
                 bool exportTextureCoordinates = ExportTextureCoordinates(rhinoMesh);
                 bool exportVertexColors = ExportVertexColors(rhinoMesh);
+
+                if(exportTextureCoordinates)
+                {
+                    Transform transform = Transform.Identity;
+                    foreach (var textureMapping in textureMappings)
+                    {
+                        if (textureMapping == null) continue;
+                        rhinoMesh.SetCachedTextureCoordinates(textureMapping, ref transform);
+                    }
+                }
 
                 glTFLoader.Schema.MeshPrimitive primitive = new glTFLoader.Schema.MeshPrimitive()
                 {
@@ -129,6 +140,17 @@ namespace glTF_BinExporter
                     int textureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
 
                     primitive.Attributes.Add(Constants.TexCoord0AttributeTag, textureCoordinatesAccessorIdx);
+
+                    for (int j = 1; j < textureMappings.Length; j++)
+                    {
+                        if(textureMappings[j] == null) primitive.Attributes.Add("TEXCOORD_" + j, textureCoordinatesAccessorIdx);
+                        else
+                        {
+                            rhinoMesh.SetTextureCoordinates(textureMappings[j], Transform.Identity, false);
+                            int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
+                            primitive.Attributes.Add("TEXCOORD_" + j, newTextureCoordinatesAccessorIdx);
+                        }
+                    }                                        
                 }
 
                 if (exportVertexColors)
@@ -154,6 +176,11 @@ namespace glTF_BinExporter
                     if(exportTextureCoordinates)
                     {
                         dracoCompressionObject.Attributes.Add(Constants.TexCoord0AttributeTag, currentGeometryInfo.TextureCoordinatesAttributePosition);
+
+                        for (int j = 1; j <= textureMappings.Length; j++)
+                        {
+                            dracoCompressionObject.Attributes.Add("TEXCOORD_" + j, currentGeometryInfo.TextureCoordinatesAttributePosition);
+                        }
                     }
                     
                     if(exportVertexColors)

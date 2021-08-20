@@ -15,6 +15,7 @@ namespace glTF_BinExporter
     {
         public Rhino.Geometry.Mesh[] Meshes;
         public RenderMaterial[] RenderMaterials;
+        public TextureMapping[] TextureMappings; 
         public RhinoObject Object;
     }
 
@@ -359,6 +360,8 @@ namespace glTF_BinExporter
 
                 if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
                 {
+                    TextureMapping[] textureMappings = GetTextureMappings(rhinoObject);
+
                     var meshes = GetMeshes(rhinoObject);
 
                     if (meshes.Length > 0) //Objects need a mesh to export
@@ -367,6 +370,7 @@ namespace glTF_BinExporter
                         {
                             Meshes = meshes,
                             RenderMaterials = mats,
+                            TextureMappings = textureMappings,
                             Object = rhinoObject,
                         });
                     }
@@ -383,6 +387,8 @@ namespace glTF_BinExporter
                     // Transform the exploded geo into its correct place
                     foreach (var item in objects.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
                     {
+                        var textureMappings = GetTextureMappings(item.rhinoObject);
+
                         var meshes = GetMeshes(item.rhinoObject);
 
                         foreach (var mesh in meshes)
@@ -396,6 +402,7 @@ namespace glTF_BinExporter
                             {
                                 Meshes = meshes,
                                 RenderMaterials = mats,
+                                TextureMappings = textureMappings,
                                 Object = item.rhinoObject,
                             });
                         }
@@ -408,6 +415,24 @@ namespace glTF_BinExporter
             }
 
             return rhinoObjectsRes;
+        }
+
+        private TextureMapping[] GetTextureMappings(RhinoObject rhinoObject)
+        {
+            var textureMappingIndeces = rhinoObject.GetTextureChannels();
+            Array.Sort(textureMappingIndeces);
+            if (textureMappingIndeces.Length == 0) return new TextureMapping[0];
+            var textureMappings = new TextureMapping[textureMappingIndeces.Max()+1];
+            int j = 0;
+            for (int i = 0; i < textureMappings.Length; i++)
+            {
+                if (textureMappingIndeces[j] == i)
+                {
+                    textureMappings[i] = rhinoObject.GetTextureMapping(textureMappingIndeces[j]);
+                    j++;
+                }
+            }
+            return textureMappings;
         }
 
         private void ExplodeRecursive(InstanceObject instanceObject, Rhino.Geometry.Transform instanceTransform, List<RhinoObject> pieces, List<Rhino.Geometry.Transform> transforms)
