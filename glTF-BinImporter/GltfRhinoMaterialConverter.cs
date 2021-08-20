@@ -76,7 +76,7 @@ namespace glTF_BinImporter
                     }
                 }
             }
-
+            
             Rhino.Display.Color4f emissionColor = material.EmissiveFactor.ToColor4f();
 
             emissionColor = GltfUtils.UnapplyGamma(emissionColor);
@@ -110,6 +110,7 @@ namespace glTF_BinImporter
             string clearcoatText = "";
             string transmissionText = "";
             string iorText = "";
+            string specularText = "";
 
             if(material.Extensions != null)
             {
@@ -127,6 +128,11 @@ namespace glTF_BinImporter
                 {
                     iorText = iorValue.ToString();
                 }
+
+                if(material.Extensions.TryGetValue("KHR_materials_specular", out object specularValue))
+                {
+                    specularText = specularValue.ToString();
+                }
             }
 
             HandleClearcoat(clearcoatText, pbr);
@@ -134,6 +140,8 @@ namespace glTF_BinImporter
             HandleTransmission(transmissionText, pbr);
 
             HandleIor(iorText, pbr);
+
+            HandleSpecular(specularText, pbr);
 
             pbr.EndChange();
 
@@ -200,7 +208,8 @@ namespace glTF_BinImporter
             {
                 if (transmission.TransmissionTexture != null)
                 {
-                    RenderTexture transmissionTexture = converter.GetRenderTexture(transmission.TransmissionTexture.Index);
+                    //Transmission is stored in the textures red channel
+                    RenderTexture transmissionTexture = converter.GetRenderTextureFromChannel(transmission.TransmissionTexture.Index, RgbaChannel.Red);
 
                     pbr.SetChild(transmissionTexture, PhysicallyBased.Opacity);
                     pbr.SetChildSlotOn(PhysicallyBased.Opacity, true, RenderContent.ChangeContexts.Program);
@@ -217,6 +226,28 @@ namespace glTF_BinImporter
             if(ior != null)
             {
                 pbr.SetParameter(PhysicallyBased.OpacityIor, ior.Ior);
+            }
+        }
+
+        void HandleSpecular(string text, RenderMaterial pbr)
+        {
+            glTFExtensions.KHR_materials_specular specular = Newtonsoft.Json.JsonConvert.DeserializeObject<glTFExtensions.KHR_materials_specular>(text);
+
+            if(specular == null)
+            {
+                pbr.SetParameter(PhysicallyBased.Specular, 1.0);
+            }
+            else
+            {
+                if(specular.SpecularTexture != null)
+                {
+                    RenderTexture specularTexture = converter.GetRenderTextureFromChannel(specular.SpecularTexture.Index, RgbaChannel.Alpha);
+
+                    pbr.SetChild(specularTexture, PhysicallyBased.Specular);
+                    pbr.SetChildSlotOn(PhysicallyBased.Specular, true, RenderContent.ChangeContexts.Program);
+                }
+
+                pbr.SetParameter(PhysicallyBased.Specular, specular.SpecularFactor);
             }
         }
 

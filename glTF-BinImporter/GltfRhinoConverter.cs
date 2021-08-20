@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace glTF_BinImporter
 {
+    enum RgbaChannel
+    {
+        Red = 0,
+        Green = 1,
+        Blue = 2,
+        Alpha = 3,
+    }
+
     class GltfRhinoConverter
     {
         public GltfRhinoConverter(glTFLoader.Schema.Gltf gltf, Rhino.RhinoDoc doc, string path)
@@ -263,6 +271,59 @@ namespace glTF_BinImporter
             return renderTexture;
         }
 
+        public Rhino.Render.RenderTexture GetRenderTextureFromChannel(int textureIndex, RgbaChannel channel)
+        {
+            System.Drawing.Bitmap bmp = GetTextureBitmap(textureIndex, out string name);
+
+            if (bmp == null)
+            {
+                return null;
+            }
+
+            int width = bmp.Width;
+            int height = bmp.Height;
+
+            System.Drawing.Bitmap resolvedBmp = new System.Drawing.Bitmap(width, height);
+
+            for(int i = 0; i < width; i++)
+            {
+                for(int j = 0; j < height; j++)
+                {
+                    System.Drawing.Color color = bmp.GetPixel(i, j);
+
+                    System.Drawing.Color colorResolved = GetColorFromChannel(color, channel);
+
+                    resolvedBmp.SetPixel(i, j, colorResolved);
+                }
+            }
+
+            Rhino.Render.RenderTexture renderTexture = Rhino.Render.RenderTexture.NewBitmapTexture(resolvedBmp, doc);
+
+            renderTexture.BeginChange(Rhino.Render.RenderContent.ChangeContexts.Program);
+
+            renderTexture.Name = name;
+
+            renderTexture.EndChange();
+
+            return renderTexture;
+        }
+
+        public System.Drawing.Color GetColorFromChannel(System.Drawing.Color color, RgbaChannel channel)
+        {
+            switch(channel)
+            {
+                case RgbaChannel.Red:
+                    return System.Drawing.Color.FromArgb(color.R, color.R, color.R);
+                case RgbaChannel.Green:
+                    return System.Drawing.Color.FromArgb(color.G, color.G, color.G);
+                case RgbaChannel.Blue:
+                    return System.Drawing.Color.FromArgb(color.B, color.B, color.B);
+                case RgbaChannel.Alpha:
+                    return System.Drawing.Color.FromArgb(color.A, color.A, color.A);
+                default:
+                    return color;
+            }
+        }
 
         public Rhino.Render.RenderTexture GetRenderTexture(int textureIndex, Rhino.Display.Color4f factor)
         {
