@@ -179,7 +179,7 @@ namespace glTF_BinExporter
                 if (material == null && options.UseDisplayColorForUnsetMaterials)
                 {
                     Color4f objectColor = GetObjectColor(rhinoObject);
-                    materialIndices[i] = CreateSolidColorMaterial(objectColor, string.IsNullOrEmpty(rhinoObject.Name) ? rhinoObject.Id.ToString() : rhinoObject.Name);
+                    materialIndices[i] = CreateSolidColorMaterial(objectColor, GetObjectName(rhinoObject));
                     continue;
                 }
                 else if (material == null)

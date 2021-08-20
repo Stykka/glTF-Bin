@@ -11,6 +11,7 @@ namespace glTF_BinExporter
         public bool MapRhinoZToGltfY = glTFBinExporterPlugin.MapRhinoZToGltfYDefault;
         public bool ExportMaterials = glTFBinExporterPlugin.ExportMaterialsDefault;
         public bool UseDisplayColorForUnsetMaterials = glTFBinExporterPlugin.UseDisplayColorForUnsetMaterialsDefault;
+        public bool ExportLayers = glTFBinExporterPlugin.ExportLayers;
 
         public SubDMode SubDExportMode = glTFBinExporterPlugin.SubDModeDefault;
         public int SubDLevel = glTFBinExporterPlugin.SubDLevelDefault;
@@ -25,7 +26,5 @@ namespace glTF_BinExporter
         public int DracoQuantizationBitsPosition = glTFBinExporterPlugin.DracoQuantizationBitsPositionDefault;
         public int DracoQuantizationBitsNormal = glTFBinExporterPlugin.DracoQuantizationBitsNormalDefault;
         public int DracoQuantizationBitsTexture = glTFBinExporterPlugin.DracoQuantizationBitsTextureDefault;
-
-        public bool ExportLayers = glTFBinExporterPlugin.ExportLayers;
     }
 }
