@@ -39,7 +39,7 @@ namespace glTF_BinExporter
             // Prep
             glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
             {
-                Name = rhinoMaterial.Name,
+                Name = GetMaterialName(renderMaterial),
                 PbrMetallicRoughness = new glTFLoader.Schema.MaterialPbrMetallicRoughness(),
             };
 
@@ -168,6 +168,15 @@ namespace glTF_BinExporter
             material.Extensions.Add(Constants.MaterialsClearcoatExtensionTag, clearcoat);
 
             return dummy.Materials.AddAndReturnIndex(material);
+        }
+
+        private string GetMaterialName(RenderMaterial renderMaterial)
+        {
+            if (string.IsNullOrEmpty(renderMaterial.Name))
+            {
+                return renderMaterial.Id.ToString();
+            }
+            else return renderMaterial.Name;
         }
 
         glTFLoader.Schema.TextureInfo CreateOpacityTexture(Rhino.DocObjects.Texture texture)
