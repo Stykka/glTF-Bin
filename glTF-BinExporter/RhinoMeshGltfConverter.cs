@@ -107,11 +107,10 @@ namespace glTF_BinExporter
 
                 if(exportTextureCoordinates)
                 {
-                    Transform transform = Transform.Identity;
                     foreach (var textureMapping in textureMappings)
                     {
                         if (textureMapping == null) continue;
-                        rhinoMesh.SetCachedTextureCoordinates(textureMapping, ref transform);
+                        rhinoMesh.SetCachedTextureCoordinates(textureMapping, ref exportData.ObjectTransform);
                     }
                 }
 
@@ -137,20 +136,57 @@ namespace glTF_BinExporter
 
                 if (exportTextureCoordinates)
                 {
-                    int textureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
-
-                    primitive.Attributes.Add(Constants.TexCoord0AttributeTag, textureCoordinatesAccessorIdx);
-
-                    for (int j = 1; j < textureMappings.Length; j++)
+                    if (options.ExportAllTextureCoordinates)
                     {
-                        if(textureMappings[j] == null) primitive.Attributes.Add("TEXCOORD_" + j, textureCoordinatesAccessorIdx);
+                        int textureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
+                        primitive.Attributes.Add(Constants.TexCoord0AttributeTag, textureCoordinatesAccessorIdx);
+
+                        for (int j = 1; j < textureMappings.Length; j++)
+                        {
+                            if (textureMappings[j] == null) primitive.Attributes.Add("TEXCOORD_" + j, textureCoordinatesAccessorIdx);
+                            else
+                            {
+                                rhinoMesh.SetTextureCoordinates(textureMappings[j], exportData.ObjectTransform, false);
+                                int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
+                                primitive.Attributes.Add("TEXCOORD_" + j, newTextureCoordinatesAccessorIdx);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var defaultTextureCoordinates = rhinoMesh.TextureCoordinates;
+                        int textureCoordinatesAccessorIdx = -1;
+
+                        if (textureMappings[0] == null)
+                        {
+                            textureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(defaultTextureCoordinates);
+                            primitive.Attributes.Add(Constants.TexCoord0AttributeTag, textureCoordinatesAccessorIdx);
+                        }
                         else
                         {
-                            rhinoMesh.SetTextureCoordinates(textureMappings[j], exportData.ObjectTransform, false);
+                            rhinoMesh.SetTextureCoordinates(textureMappings[0], exportData.ObjectTransform, false);
                             int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
-                            primitive.Attributes.Add("TEXCOORD_" + j, newTextureCoordinatesAccessorIdx);
+                            primitive.Attributes.Add(Constants.TexCoord0AttributeTag, newTextureCoordinatesAccessorIdx);
                         }
-                    }                                        
+                        if (textureMappings[1] == null && options.UV1 == 0 && options.UV0 != options.UV1)
+                        {
+                            if (textureCoordinatesAccessorIdx == -1)
+                            {
+                                textureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(defaultTextureCoordinates);
+                                primitive.Attributes.Add(Constants.TexCoord1AttributeTag, textureCoordinatesAccessorIdx);
+                            }
+                            else
+                            {
+                                primitive.Attributes.Add(Constants.TexCoord1AttributeTag, textureCoordinatesAccessorIdx);
+                            }
+                        }
+                        else if(options.UV0 != options.UV1)
+                        {
+                            rhinoMesh.SetTextureCoordinates(textureMappings[1], exportData.ObjectTransform, false);
+                            int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
+                            primitive.Attributes.Add(Constants.TexCoord1AttributeTag, newTextureCoordinatesAccessorIdx);
+                        }
+                    }
                 }
 
                 if (exportVertexColors)

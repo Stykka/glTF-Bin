@@ -434,14 +434,34 @@ namespace glTF_BinExporter
                 return new TextureMapping[0];
             }
 
-            var textureMappings = new TextureMapping[textureMappingIndeces.Max()+1];
-            int j = 0;
-            for (int i = 0; i < textureMappings.Length; i++)
+            TextureMapping[] textureMappings;
+            if (options.ExportAllTextureCoordinates)
             {
-                if (textureMappingIndeces[j] == i)
+                textureMappings = new TextureMapping[textureMappingIndeces.Max() + 1];
+                int j = 0;
+                for (int i = 0; i < textureMappings.Length; i++)
                 {
-                    textureMappings[i] = rhinoObject.GetTextureMapping(textureMappingIndeces[j], out objectTransform);
-                    j++;
+                    if (textureMappingIndeces[j] == i)
+                    {
+                        textureMappings[i] = rhinoObject.GetTextureMapping(textureMappingIndeces[j], out objectTransform);
+                        j++;
+                    }
+                }
+            }
+            else
+            {
+                textureMappings = new TextureMapping[2];
+
+                if (textureMappingIndeces.Contains(options.UV0))
+                {
+                    textureMappings[0] = rhinoObject.GetTextureMapping(options.UV0, out objectTransform);
+                }
+                if (options.UV0 != options.UV1)
+                {
+                    if (textureMappingIndeces.Contains(options.UV1))
+                    {
+                        textureMappings[1] = rhinoObject.GetTextureMapping(options.UV1, out objectTransform);
+                    }
                 }
             }
             return textureMappings;

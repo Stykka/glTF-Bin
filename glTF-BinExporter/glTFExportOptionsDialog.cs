@@ -23,6 +23,14 @@ namespace glTF_BinExporter
         private Slider subdLevel = new Slider();
 
         private CheckBox exportTextureCoordinates = new CheckBox();
+        private GroupBox textureChannelsBox = new GroupBox();
+        private Label uv0Label = new Label();
+        private NumericStepper uv0 = new NumericStepper();
+        private Label uv1Label = new Label();
+        private NumericStepper uv1 = new NumericStepper();
+        private CheckBox exportAllTextureChannels = new CheckBox();
+        private Label uvWarningLabel = new Label();
+
         private CheckBox exportVertexNormals = new CheckBox();
         private CheckBox exportOpenMeshes = new CheckBox();
         private CheckBox exportVertexColors = new CheckBox();
@@ -78,7 +86,39 @@ namespace glTF_BinExporter
                 }
             };
 
+            textureChannelsBox.Text = "Texture Channels";
+
             exportTextureCoordinates.Text = "Export texture coordinates";
+
+            uv0Label.Text = "UV0 Channel";
+
+            uv0.ToolTip = "0 = Default";
+            uv0.DecimalPlaces = 0;
+            uv0.MinValue = 0;
+
+            uv1Label.Text = "UV1 Channel";
+
+            uv1.ToolTip = "0 = Default";
+            uv1.DecimalPlaces = 0;
+            uv1.MinValue = 0;
+
+            exportAllTextureChannels.Text = "Export all texture channels (unsupported)";
+
+            textureChannelsBox.Content = new TableLayout()
+            {
+                Padding = DefaultPadding,
+                Spacing = DefaultSpacing,
+                Rows =
+                {
+                    new TableRow(uv0Label, uv0),
+                    new TableRow(uv1Label, uv1),
+                    new TableRow(exportAllTextureChannels)
+                }
+            };
+
+            uvWarningLabel.Text = "Warning! These textures are getting merged:\n" +
+                "- Color and alpha\n" +
+                "- Metalness and Roughness";
 
             exportVertexNormals.Text = "Export vertex normals";
 
@@ -105,6 +145,9 @@ namespace glTF_BinExporter
 
             useDracoCompressionCheck.CheckedChanged += UseDracoCompressionCheck_CheckedChanged;
             exportMaterials.CheckedChanged += ExportMaterials_CheckedChanged;
+
+            exportTextureCoordinates.CheckedChanged += ExportTextureCoordinates_CheckedChanged;
+            exportAllTextureChannels.CheckedChanged += ExportAllTextureChannels_CheckedChanged;
 
             useSubdControlNet.CheckedChanged += UseSubdControlNet_CheckedChanged;
 
@@ -173,6 +216,24 @@ namespace glTF_BinExporter
 
             tabControl.Pages.Add(meshPage);
 
+            TabPage textureCoordinatesPage = new TabPage()
+            {
+                Text = "UVs",
+                Content = new TableLayout()
+                {
+                    Padding = DefaultPadding,
+                    Spacing = DefaultSpacing,
+                    Rows =
+                    {
+                        new TableRow(exportTextureCoordinates),
+                        new TableRow(textureChannelsBox),
+                        new TableRow(uvWarningLabel)
+                    },
+                },
+            };
+
+            tabControl.Pages.Add(textureCoordinatesPage);
+
             TabPage compressionPage = new TabPage()
             {
                 Text = "Compression",
@@ -203,6 +264,7 @@ namespace glTF_BinExporter
             };
         }
 
+
         private void OptionsToDialog()
         {
             useSettingsDontShowDialogCheck.Checked = glTFBinExporterPlugin.UseSavedSettingsDontShowDialog;
@@ -221,6 +283,12 @@ namespace glTF_BinExporter
             subdLevel.Value = glTFBinExporterPlugin.SubDLevel;
 
             exportTextureCoordinates.Checked = glTFBinExporterPlugin.ExportTextureCoordinates;
+            EnableDisableTextureChannelControls(glTFBinExporterPlugin.ExportTextureCoordinates);
+            uv0.Value = glTFBinExporterPlugin.UV0;
+            uv1.Value = glTFBinExporterPlugin.UV1;
+            exportAllTextureChannels.Checked = glTFBinExporterPlugin.ExportAllTextureCoordinates;
+            EnableDisableUVControls(glTFBinExporterPlugin.ExportAllTextureCoordinates);
+
             exportVertexNormals.Checked = glTFBinExporterPlugin.ExportVertexNormals;
             exportOpenMeshes.Checked = glTFBinExporterPlugin.ExportOpenMeshes;
             exportVertexColors.Checked = glTFBinExporterPlugin.ExportVertexColors;
@@ -249,6 +317,10 @@ namespace glTF_BinExporter
             glTFBinExporterPlugin.SubDLevel = subdLevel.Value;
 
             glTFBinExporterPlugin.ExportTextureCoordinates = GetCheckboxValue(exportTextureCoordinates);
+            glTFBinExporterPlugin.UV0 = (int)uv0.Value;
+            glTFBinExporterPlugin.UV1 = (int)uv1.Value;
+            glTFBinExporterPlugin.ExportAllTextureCoordinates = GetCheckboxValue(exportAllTextureChannels);
+
             glTFBinExporterPlugin.ExportVertexNormals = GetCheckboxValue(exportVertexNormals);
             glTFBinExporterPlugin.ExportOpenMeshes = GetCheckboxValue(exportOpenMeshes);
             glTFBinExporterPlugin.ExportVertexColors = GetCheckboxValue(exportVertexColors);
@@ -295,6 +367,30 @@ namespace glTF_BinExporter
         private void EnableDisableMaterialControls(bool enabled)
         {
             useDisplayColorForUnsetMaterial.Enabled = enabled;
+        }
+        private void ExportTextureCoordinates_CheckedChanged(object sender, EventArgs e)
+        {
+            bool enabled = GetCheckboxValue(exportTextureCoordinates);
+
+            EnableDisableTextureChannelControls(enabled);
+        }
+
+        private void EnableDisableTextureChannelControls(bool enabled)
+        {
+            textureChannelsBox.Enabled = enabled;
+        }
+
+        private void ExportAllTextureChannels_CheckedChanged(object sender, EventArgs e)
+        {
+            bool enabled = GetCheckboxValue(exportAllTextureChannels);
+
+            EnableDisableUVControls(enabled);
+        }
+
+        private void EnableDisableUVControls(bool enabled)
+        {
+            uv0.Enabled = !enabled;
+            uv1.Enabled = !enabled;
         }
 
         private void UseSubdControlNet_CheckedChanged(object sender, EventArgs e)

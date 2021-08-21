@@ -27,6 +27,7 @@ namespace glTF_BinExporter
         public const string PositionAttributeTag = "POSITION";
         public const string NormalAttributeTag = "NORMAL";
         public const string TexCoord0AttributeTag = "TEXCOORD_0";
+        public const string TexCoord1AttributeTag = "TEXCOORD_1";
         public const string VertexColorAttributeTag = "COLOR_0";
 
         public const string DracoMeshCompressionExtensionTag = "KHR_draco_mesh_compression";

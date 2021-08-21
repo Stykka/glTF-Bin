@@ -147,6 +147,33 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(ExportTextureCoordinatesKey, value);
         }
 
+        private const string UV0Key = "UV0";
+        public const int UV0Default = 0;
+
+        public static int UV0
+        {
+            get => Instance.Settings.GetInteger(UV0Key, UV0Default);
+            set => Instance.Settings.SetInteger(UV0Key, value);
+        }
+
+        private const string UV1Key = "UV1";
+        public const int UV1Default = 0;
+
+        public static int UV1
+        {
+            get => Instance.Settings.GetInteger(UV1Key, UV1Default);
+            set => Instance.Settings.SetInteger(UV1Key, value);
+        }
+
+        public const string ExportAllTextureCoordinatesKey = "ExportAllTextureCoordinates";
+        public const bool ExportAllTextureCoordinatesDefault = false;
+
+        public static bool ExportAllTextureCoordinates
+        {
+            get => Instance.Settings.GetBool(ExportAllTextureCoordinatesKey, ExportAllTextureCoordinatesDefault);
+            set => Instance.Settings.SetBool(ExportAllTextureCoordinatesKey, value);
+        }
+
         public const string ExportVertexNormalsKey = "ExportVertexNormals";
         public const bool ExportVertexNormalsDefault = true;
 

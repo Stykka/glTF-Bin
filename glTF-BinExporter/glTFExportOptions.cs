@@ -17,6 +17,10 @@ namespace glTF_BinExporter
         public int SubDLevel = glTFBinExporterPlugin.SubDLevelDefault;
 
         public bool ExportTextureCoordinates = glTFBinExporterPlugin.ExportTextureCoordinatesDefault;
+        public int UV0 = glTFBinExporterPlugin.UV0Default;
+        public int UV1 = glTFBinExporterPlugin.UV1Default;
+        public bool ExportAllTextureCoordinates = glTFBinExporterPlugin.ExportAllTextureCoordinatesDefault;
+
         public bool ExportVertexNormals = glTFBinExporterPlugin.ExportVertexNormalsDefault;
         public bool ExportOpenMeshes = glTFBinExporterPlugin.ExportOpenMeshesDefault;
         public bool ExportVertexColors = glTFBinExporterPlugin.ExportVertexColorsDefault;

@@ -210,7 +210,7 @@ namespace glTF_BinExporter
             glTFLoader.Schema.TextureInfo textureInfo = new glTFLoader.Schema.TextureInfo()
             {
                 Index = textureIndex,
-                TexCoord = texture.MappingChannelId,
+                TexCoord = GetMappingChannel(texture.MappingChannelId),
             };
 
             return textureInfo;
@@ -474,7 +474,23 @@ namespace glTF_BinExporter
         {
             int textureIdx = AddTextureToBuffers(texturePath);
 
-            return new glTFLoader.Schema.TextureInfo() { Index = textureIdx, TexCoord = mappingChannel };
+            return new glTFLoader.Schema.TextureInfo() { Index = textureIdx, TexCoord = GetMappingChannel(mappingChannel) };
+        }
+
+        private int GetMappingChannel(int mappingChannel)
+        {
+            if (options.ExportAllTextureCoordinates) return mappingChannel;
+            else
+            {
+                if (mappingChannel == options.UV0) return 0;
+                else if (mappingChannel == options.UV1) return 1;
+                else
+                {
+                    if (options.UV0 == 0) return 0;
+                    else if (options.UV1 == 0) return 0;
+                    else return 0;
+                }
+            }
         }
 
         private glTFLoader.Schema.MaterialNormalTextureInfo AddTextureNormal(Rhino.DocObjects.Texture normalTexture)
@@ -486,7 +502,7 @@ namespace glTF_BinExporter
             return new glTFLoader.Schema.MaterialNormalTextureInfo()
             {
                 Index = textureIdx,
-                TexCoord = normalTexture.MappingChannelId,
+                TexCoord = GetMappingChannel(normalTexture.MappingChannelId),
                 Scale = (float)constant,
             };
         }
@@ -510,7 +526,7 @@ namespace glTF_BinExporter
             return new glTFLoader.Schema.MaterialOcclusionTextureInfo()
             {
                 Index = textureIdx,
-                TexCoord = mappingChannel,
+                TexCoord = GetMappingChannel(mappingChannel),
                 Strength = 0.9f
             };
         }
@@ -629,7 +645,7 @@ namespace glTF_BinExporter
             return new glTFLoader.Schema.TextureInfo()
             {
                 Index = textureIdx,
-                TexCoord = mappingChannel
+                TexCoord = GetMappingChannel(mappingChannel)
             };
         }
 
