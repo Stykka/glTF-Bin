@@ -267,6 +267,10 @@ namespace glTF_BinExporter
                 SubDLevel = SubDLevel,
 
                 ExportTextureCoordinates = ExportTextureCoordinates,
+                UV0 = UV0,
+                UV1 = UV1,
+                ExportAllTextureCoordinates = ExportAllTextureCoordinates,
+
                 ExportVertexNormals = ExportVertexNormals,
                 ExportOpenMeshes = ExportOpenMeshes,
                 ExportVertexColors = ExportVertexColors,

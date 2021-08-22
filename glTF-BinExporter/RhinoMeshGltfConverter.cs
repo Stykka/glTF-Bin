@@ -157,7 +157,7 @@ namespace glTF_BinExporter
                         var defaultTextureCoordinates = rhinoMesh.TextureCoordinates;
                         int textureCoordinatesAccessorIdx = -1;
 
-                        if (textureMappings[0] == null)
+                        if (textureMappings.Length == 0 || textureMappings[0] == null)
                         {
                             textureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(defaultTextureCoordinates);
                             primitive.Attributes.Add(Constants.TexCoord0AttributeTag, textureCoordinatesAccessorIdx);
@@ -168,7 +168,7 @@ namespace glTF_BinExporter
                             int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
                             primitive.Attributes.Add(Constants.TexCoord0AttributeTag, newTextureCoordinatesAccessorIdx);
                         }
-                        if (textureMappings[1] == null && options.UV1 == 0 && options.UV0 != options.UV1)
+                        if ((textureMappings.Length < 2 || textureMappings[1] == null) && options.UV1 == 0 && options.UV0 != options.UV1)
                         {
                             if (textureCoordinatesAccessorIdx == -1)
                             {
@@ -180,7 +180,7 @@ namespace glTF_BinExporter
                                 primitive.Attributes.Add(Constants.TexCoord1AttributeTag, textureCoordinatesAccessorIdx);
                             }
                         }
-                        else if(options.UV0 != options.UV1)
+                        else if(textureMappings.Length > 1 && options.UV0 != options.UV1)
                         {
                             rhinoMesh.SetTextureCoordinates(textureMappings[1], exportData.ObjectTransform, false);
                             int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);
@@ -213,7 +213,7 @@ namespace glTF_BinExporter
                     {
                         dracoCompressionObject.Attributes.Add(Constants.TexCoord0AttributeTag, currentGeometryInfo.TextureCoordinatesAttributePosition);
 
-                        for (int j = 1; j <= textureMappings.Length; j++)
+                        for (int j = 1; j < textureMappings.Length; j++)
                         {
                             dracoCompressionObject.Attributes.Add("TEXCOORD_" + j, currentGeometryInfo.TextureCoordinatesAttributePosition);
                         }
