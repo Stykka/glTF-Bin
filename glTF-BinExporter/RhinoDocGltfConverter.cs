@@ -85,7 +85,8 @@ namespace glTF_BinExporter
 
             foreach (ObjectExportData exportData in sanitized)
             {
-                int[] materialIndices = GetMaterials(exportData.RenderMaterials, exportData.Object);
+                int[] materialIndices = null;
+                if(options.ExportMaterials) materialIndices = GetMaterials(exportData.RenderMaterials, exportData.Object);
 
                 RhinoMeshGltfConverter meshConverter = new RhinoMeshGltfConverter(exportData, materialIndices, options, binary, dummy, binaryBuffer);
                 int meshIndex = meshConverter.AddMesh();
