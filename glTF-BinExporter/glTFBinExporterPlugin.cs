@@ -54,7 +54,7 @@ namespace glTF_BinExporter
 
             IEnumerable<Rhino.DocObjects.RhinoObject> objects = GetObjectsToExport(doc, options);
 
-            if(!GlTFExporterCommand.DoExport(filename, exportOptions, binary, objects, doc.RenderSettings.LinearWorkflow))
+            if(!GlTFExporterCommand.DoExport(filename, exportOptions, binary, doc, objects, doc.RenderSettings.LinearWorkflow))
             {
                 return WriteFileResult.Failure;
             }
