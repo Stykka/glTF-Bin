@@ -31,6 +31,8 @@ $ /Applications/Rhino\ 7.app/Contents/Resources/bin/yak push gltf-binexporter-XX
 
 [Joshua Kennedy](https://github.com/jrz371)
 
+[Peter Krattenmacher](https://github.com/pkratten)
+
 # License
 MIT but please make PRs if you make improvements.
 
