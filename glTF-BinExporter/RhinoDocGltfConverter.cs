@@ -55,6 +55,8 @@ namespace glTF_BinExporter
 
         private Dictionary<int, int> layerMaterialIndices = new Dictionary<int, int>();
 
+        private Dictionary<int, int> colorMaterials = new Dictionary<int, int>();
+
         private int defaultMaterialIndex = -1;
 
         public Gltf ConvertToGltf()
@@ -176,8 +178,6 @@ namespace glTF_BinExporter
             RhinoObject[] subObjects = rhinoObject.GetSubObjects();
             int[] materialIndices = new int[materials.Length];
 
-            Dictionary<int, int> colorIndices = new Dictionary<int, int>();
-
             for (int i = 0; i < subObjects.Length; i++)
             {
                 var material = materials[i];
@@ -192,7 +192,7 @@ namespace glTF_BinExporter
                         }
                         else
                         {
-                            materialIndices[i] = GetColorMaterial(subObjects[i], colorIndices);
+                            materialIndices[i] = GetColorMaterial(subObjects[i]);
                         }
                     }
                     else
@@ -216,16 +216,28 @@ namespace glTF_BinExporter
             return materialIndices;
         }
 
-        private int GetColorMaterial(RhinoObject rhinoObject, Dictionary<int, int> colorMaterials)
+        private int GetColorMaterial(RhinoObject rhinoObject)
         {
             Color objectColor = GetObjectColor(rhinoObject);
             int colorIndex = objectColor.ToArgb();
             if (!colorMaterials.TryGetValue(colorIndex, out int colorMaterialIndex))
             {
-                colorMaterialIndex = CreateSolidColorMaterial(new Color4f(objectColor), GetObjectName(rhinoObject));
+                colorMaterialIndex = CreateSolidColorMaterial(new Color4f(objectColor), GetColorName(objectColor));
                 colorMaterials.Add(colorIndex, colorIndex);
             }
             return colorMaterialIndex;
+        }
+
+        private string GetColorName(Color color)
+        {
+            if (color.IsNamedColor)
+            {
+                return color.Name;
+            }
+            else
+            {
+                return color.ToString();
+            }
         }
 
         private int GetDefaultMaterial()
