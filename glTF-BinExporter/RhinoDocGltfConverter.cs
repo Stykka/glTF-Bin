@@ -100,7 +100,7 @@ namespace glTF_BinExporter
 
                 if (options.ExportLayers)
                 {
-                    AddToLayer(RhinoDoc.ActiveDoc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
+                    AddToLayer(doc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
                 }
                 else
                 {
@@ -144,7 +144,7 @@ namespace glTF_BinExporter
 
                 layers.Add(layer.Index, node);
                 int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
-                Layer parentLayer = RhinoDoc.ActiveDoc.Layers.FindId(layer.ParentLayerId);
+                Layer parentLayer = doc.Layers.FindId(layer.ParentLayerId);
 
                 if (parentLayer == null)
                 {
@@ -232,7 +232,7 @@ namespace glTF_BinExporter
             if (!layerMaterialIndices.TryGetValue(rhinoObject.Attributes.LayerIndex, out int layerMaterialIndex))
             {
                 Color4f objectColor = GetObjectColor(rhinoObject);
-                layerMaterialIndex = CreateSolidColorMaterial(objectColor, RhinoDoc.ActiveDoc.Layers[rhinoObject.Attributes.LayerIndex].Name);
+                layerMaterialIndex = CreateSolidColorMaterial(objectColor, doc.Layers[rhinoObject.Attributes.LayerIndex].Name);
                 layerMaterialIndices.Add(rhinoObject.Attributes.LayerIndex, layerMaterialIndex);
             }
             return layerMaterialIndex;
@@ -258,7 +258,7 @@ namespace glTF_BinExporter
             {
                 int layerIndex = rhinoObject.Attributes.LayerIndex;
 
-                return new Color4f(RhinoDoc.ActiveDoc.Layers[layerIndex].Color);
+                return new Color4f(doc.Layers[layerIndex].Color);
             }
             else
             {
