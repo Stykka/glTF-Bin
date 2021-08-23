@@ -54,6 +54,8 @@ namespace glTF_BinExporter
 
         private Dictionary<int, int> layerMaterialIndices = new Dictionary<int, int>();
 
+        private int defaultMaterialIndex = -1;
+
         public Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
@@ -175,57 +177,60 @@ namespace glTF_BinExporter
 
             Dictionary<Color4f, int> colorIndices = new Dictionary<Color4f, int>();
 
-            for (int i = 0; i < materials.Length; i++)
+            for (int i = 0; i < subObjects.Length; i++)
             {
                 var material = materials[i];
 
-                if (!options.ExportMaterials)
+                if(material == null)
                 {
-                    return null;
-                }
-
-                Guid materialId;
-                if (material == null && options.UseDisplayColorForUnsetMaterials)
-                {
-                    if (options.ExportLayers)
+                    if(options.UseDisplayColorForUnsetMaterials)
                     {
-                        if (subObjects[i].Attributes.ColorSource == ObjectColorSource.ColorFromLayer)
+                        if(subObjects[i].Attributes.ColorSource == ObjectColorSource.ColorFromLayer)
                         {
                             materialIndices[i] = GetLayerMaterial(rhinoObject);
-                            continue;
+                        }
+                        else
+                        {
+                            Color4f objectColor = GetObjectColor(subObjects[i]);
+                            if (!colorIndices.TryGetValue(objectColor, out int colorIndex))
+                            {
+                                colorIndex = CreateSolidColorMaterial(objectColor, GetObjectName(rhinoObject));
+                                colorIndices.Add(objectColor, colorIndex);
+                            }
+                            materialIndices[i] = colorIndex;
                         }
                     }
-
-                    Color4f objectColor = GetObjectColor(subObjects[i]);
-                    if (!colorIndices.TryGetValue(objectColor, out int colorIndex))
+                    else
                     {
-                        colorIndex = CreateSolidColorMaterial(objectColor, GetObjectName(rhinoObject));
-                        colorIndices.Add(objectColor, colorIndex);
+                        materialIndices[i] = GetDefaultMaterial();
                     }
-                    materialIndices[i] = colorIndex;
-                    continue;
-                }
-                else if (material == null)
-                {
-                    material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
-                    materialId = new Guid();
                 }
                 else
                 {
-                    materialId = material.Id;
+                    Guid materialId = material.Id;
+                    if (!materialsMap.TryGetValue(materialId, out int materialIndex))
+                    {
+                        RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
+                        materialIndex = materialConverter.AddMaterial();
+                        materialsMap.Add(materialId, materialIndex);
+                    }
+                    materialIndices[i] = materialIndex;
                 }
-
-                if (!materialsMap.TryGetValue(materialId, out int materialIndex))
-                {
-                    RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
-                    materialIndex = materialConverter.AddMaterial();
-                    materialsMap.Add(materialId, materialIndex);
-                }
-
-                materialIndices[i] = materialIndex;
             }
 
             return materialIndices;
+        }
+
+        private int GetDefaultMaterial()
+        {
+            if(defaultMaterialIndex == -1)
+            {
+                RenderMaterial material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
+                material.Name = "DefaultMaterial";
+                RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
+                defaultMaterialIndex = materialConverter.AddMaterial();
+            }
+            return defaultMaterialIndex;
         }
 
         private int GetLayerMaterial(RhinoObject rhinoObject)
