@@ -51,29 +51,27 @@ namespace glTF_BinImporter
 
                 double roughness = material.PbrMetallicRoughness.RoughnessFactor;
 
-                pbr.SetParameter(PhysicallyBased.Roughness, roughness);
+                double metalness = material.PbrMetallicRoughness.MetallicFactor;
 
-                double metallic = material.PbrMetallicRoughness.MetallicFactor;
-
-                pbr.SetParameter(PhysicallyBased.Metallic, metallic);
-
-                if(material.PbrMetallicRoughness.MetallicRoughnessTexture != null)
+                if (material.PbrMetallicRoughness.MetallicRoughnessTexture != null)
                 {
                     int index = material.PbrMetallicRoughness.MetallicRoughnessTexture.Index;
 
                     RhinoGltfMetallicRoughnessConverter metallicRoughness = converter.GetMetallicRoughnessTexture(index);
 
-                    if(metallicRoughness.HasMetalness)
-                    {
-                        pbr.SetChild(metallicRoughness.MetallicTexture, PhysicallyBased.Metallic);
-                        pbr.SetChildSlotOn(PhysicallyBased.Metallic, true, RenderContent.ChangeContexts.Program);
-                    }
+                    pbr.SetChild(metallicRoughness.MetallicTexture, PhysicallyBased.Metallic);
+                    pbr.SetChildSlotOn(PhysicallyBased.Metallic, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChildSlotAmount(PhysicallyBased.Metallic, metalness * 100.0, RenderContent.ChangeContexts.Program);
 
-                    if(metallicRoughness.HasRoughness)
-                    {
-                        pbr.SetChild(metallicRoughness.RoughnessTexture, PhysicallyBased.Roughness);
-                        pbr.SetChildSlotOn(PhysicallyBased.Roughness, true, RenderContent.ChangeContexts.Program);
-                    }
+                    pbr.SetChild(metallicRoughness.RoughnessTexture, PhysicallyBased.Roughness);
+                    pbr.SetChildSlotOn(PhysicallyBased.Roughness, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChildSlotAmount(PhysicallyBased.Roughness, roughness * 100.0, RenderContent.ChangeContexts.Program);
+                }
+                else
+                {
+                    pbr.SetParameter(PhysicallyBased.Roughness, roughness);
+
+                    pbr.SetParameter(PhysicallyBased.Metallic, metalness);
                 }
             }
             
@@ -97,6 +95,8 @@ namespace glTF_BinImporter
 
                 pbr.SetChild(occlusionTexture, PhysicallyBased.AmbientOcclusion);
                 pbr.SetChildSlotOn(PhysicallyBased.AmbientOcclusion, true, RenderContent.ChangeContexts.Program);
+                pbr.SetChildSlotAmount(PhysicallyBased.AmbientOcclusion, material.OcclusionTexture.Strength * 100.0, RenderContent.ChangeContexts.Program);
+                
             }
 
             if(material.NormalTexture != null)
@@ -172,9 +172,12 @@ namespace glTF_BinImporter
 
                     pbr.SetChild(clearcoatTexture, PhysicallyBased.Clearcoat);
                     pbr.SetChildSlotOn(PhysicallyBased.Clearcoat, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChildSlotAmount(PhysicallyBased.Clearcoat, clearcoat.ClearcoatFactor * 100.0, RenderContent.ChangeContexts.Program);
                 }
-
-                pbr.SetParameter(PhysicallyBased.Clearcoat, clearcoat.ClearcoatFactor);
+                else
+                {
+                    pbr.SetParameter(PhysicallyBased.Clearcoat, clearcoat.ClearcoatFactor);
+                }
 
                 if (clearcoat.ClearcoatRoughnessTexture != null)
                 {
@@ -182,9 +185,12 @@ namespace glTF_BinImporter
 
                     pbr.SetChild(clearcoatRoughnessTexture, PhysicallyBased.ClearcoatRoughness);
                     pbr.SetChildSlotOn(PhysicallyBased.ClearcoatRoughness, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChildSlotAmount(PhysicallyBased.ClearcoatRoughness, clearcoat.ClearcoatRoughnessFactor * 100.0, RenderContent.ChangeContexts.Program);
                 }
-
-                pbr.SetParameter(PhysicallyBased.ClearcoatRoughness, clearcoat.ClearcoatRoughnessFactor);
+                else
+                {
+                    pbr.SetParameter(PhysicallyBased.ClearcoatRoughness, clearcoat.ClearcoatRoughnessFactor);
+                }
 
                 if (clearcoat.ClearcoatNormalTexture != null)
                 {
@@ -213,9 +219,12 @@ namespace glTF_BinImporter
 
                     pbr.SetChild(transmissionTexture, PhysicallyBased.Opacity);
                     pbr.SetChildSlotOn(PhysicallyBased.Opacity, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChildSlotAmount(PhysicallyBased.Opacity, transmission.TransmissionFactor * 100.0, RenderContent.ChangeContexts.Program);
                 }
-
-                pbr.SetParameter(PhysicallyBased.Opacity, 1.0 - transmission.TransmissionFactor);
+                else
+                {
+                    pbr.SetParameter(PhysicallyBased.Opacity, 1.0 - transmission.TransmissionFactor);
+                }
             }
         }
 
@@ -245,9 +254,12 @@ namespace glTF_BinImporter
 
                     pbr.SetChild(specularTexture, PhysicallyBased.Specular);
                     pbr.SetChildSlotOn(PhysicallyBased.Specular, true, RenderContent.ChangeContexts.Program);
+                    pbr.SetChildSlotAmount(PhysicallyBased.Specular, specular.SpecularFactor * 100.0, RenderContent.ChangeContexts.Program);
                 }
-
-                pbr.SetParameter(PhysicallyBased.Specular, specular.SpecularFactor);
+                else
+                {
+                    pbr.SetParameter(PhysicallyBased.Specular, specular.SpecularFactor);
+                }
             }
         }
 

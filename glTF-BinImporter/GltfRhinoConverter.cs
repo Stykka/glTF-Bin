@@ -44,8 +44,6 @@ namespace glTF_BinImporter
 
         List<System.Drawing.Bitmap> images = new List<System.Drawing.Bitmap>();
 
-        Dictionary<int, RhinoGltfMetallicRoughnessConverter> metalRoughnessTextures = new Dictionary<int, RhinoGltfMetallicRoughnessConverter>(); 
-
         List<Rhino.Render.RenderMaterial> materials = new List<Rhino.Render.RenderMaterial>();
 
         List<GltfMeshHolder> meshHolders = new List<GltfMeshHolder>();
@@ -388,16 +386,11 @@ namespace glTF_BinImporter
             return null;
         }
 
-        public RhinoGltfMetallicRoughnessConverter GetMetallicRoughnessTexture(int imageIndex)
+        public RhinoGltfMetallicRoughnessConverter GetMetallicRoughnessTexture(int textureIndex)
         {
-            if(!metalRoughnessTextures.TryGetValue(imageIndex, out RhinoGltfMetallicRoughnessConverter converter))
-            {
-                System.Drawing.Bitmap bmp = images[imageIndex];
+            System.Drawing.Bitmap bmp = GetTextureBitmap(textureIndex, out string name);
 
-                converter = new RhinoGltfMetallicRoughnessConverter(bmp, doc);
-
-                metalRoughnessTextures.Add(imageIndex, converter);
-            }
+            RhinoGltfMetallicRoughnessConverter converter = new RhinoGltfMetallicRoughnessConverter(bmp, doc, name);
 
             return converter;
         }

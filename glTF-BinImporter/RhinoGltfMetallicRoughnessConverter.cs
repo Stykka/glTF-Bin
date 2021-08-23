@@ -8,7 +8,7 @@ namespace glTF_BinImporter
 {
     class RhinoGltfMetallicRoughnessConverter
     {
-        public RhinoGltfMetallicRoughnessConverter(System.Drawing.Bitmap bmp, Rhino.RhinoDoc doc)
+        public RhinoGltfMetallicRoughnessConverter(System.Drawing.Bitmap bmp, Rhino.RhinoDoc doc, string name)
         {
             System.Drawing.Bitmap metalnessBitmap = new System.Drawing.Bitmap(bmp.Width, bmp.Height);
 
@@ -23,42 +23,33 @@ namespace glTF_BinImporter
                     byte metalness = color.B;
                     byte roughness = color.G;
 
-                    HasMetalness = metalness > 0 || HasMetalness;
-                    HasRoughness = roughness > 0 || HasRoughness;
-
                     metalnessBitmap.SetPixel(i, j, System.Drawing.Color.FromArgb(metalness, metalness, metalness));
                     roughnessBitmap.SetPixel(i, j, System.Drawing.Color.FromArgb(roughness, roughness, roughness));
                 }
             }
 
-            if(HasMetalness)
-            {
-                MetallicTexture = Rhino.Render.RenderTexture.NewBitmapTexture(metalnessBitmap, doc);
-            }
+            MetallicTexture = Rhino.Render.RenderTexture.NewBitmapTexture(metalnessBitmap, doc);
 
-            if(HasRoughness)
-            {
-                RoughnessTexture = Rhino.Render.RenderTexture.NewBitmapTexture(roughnessBitmap, doc);
-            }
+            MetallicTexture.BeginChange(Rhino.Render.RenderContent.ChangeContexts.Program);
+
+            MetallicTexture.Name = name + "-Metallic";
+
+            MetallicTexture.EndChange();
+
+            RoughnessTexture = Rhino.Render.RenderTexture.NewBitmapTexture(roughnessBitmap, doc);
+
+            RoughnessTexture.BeginChange(Rhino.Render.RenderContent.ChangeContexts.Program);
+
+            RoughnessTexture.Name = name + "-Roughness";
+
+            RoughnessTexture.EndChange();
         }
-
-        public bool HasMetalness
-        {
-            get;
-            private set;
-        } = false;
 
         public Rhino.Render.RenderTexture MetallicTexture
         {
             get;
             private set;
         } = null;
-
-        public bool HasRoughness
-        {
-            get;
-            private set;
-        } = false;
 
         public Rhino.Render.RenderTexture RoughnessTexture
         {
