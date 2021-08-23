@@ -5,6 +5,7 @@ using Rhino.DocObjects;
 using Rhino.Render;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 
 namespace glTF_BinExporter
@@ -175,7 +176,7 @@ namespace glTF_BinExporter
             RhinoObject[] subObjects = rhinoObject.GetSubObjects();
             int[] materialIndices = new int[materials.Length];
 
-            Dictionary<Color4f, int> colorIndices = new Dictionary<Color4f, int>();
+            Dictionary<int, int> colorIndices = new Dictionary<int, int>();
 
             for (int i = 0; i < subObjects.Length; i++)
             {
@@ -191,13 +192,7 @@ namespace glTF_BinExporter
                         }
                         else
                         {
-                            Color4f objectColor = GetObjectColor(subObjects[i]);
-                            if (!colorIndices.TryGetValue(objectColor, out int colorIndex))
-                            {
-                                colorIndex = CreateSolidColorMaterial(objectColor, GetObjectName(rhinoObject));
-                                colorIndices.Add(objectColor, colorIndex);
-                            }
-                            materialIndices[i] = colorIndex;
+                            materialIndices[i] = GetColorMaterial(subObjects[i], colorIndices);
                         }
                     }
                     else
@@ -221,6 +216,18 @@ namespace glTF_BinExporter
             return materialIndices;
         }
 
+        private int GetColorMaterial(RhinoObject rhinoObject, Dictionary<int, int> colorMaterials)
+        {
+            Color objectColor = GetObjectColor(rhinoObject);
+            int colorIndex = objectColor.ToArgb();
+            if (!colorMaterials.TryGetValue(colorIndex, out int colorMaterialIndex))
+            {
+                colorMaterialIndex = CreateSolidColorMaterial(new Color4f(objectColor), GetObjectName(rhinoObject));
+                colorMaterials.Add(colorIndex, colorIndex);
+            }
+            return colorMaterialIndex;
+        }
+
         private int GetDefaultMaterial()
         {
             if(defaultMaterialIndex == -1)
@@ -237,7 +244,7 @@ namespace glTF_BinExporter
         {
             if (!layerMaterialIndices.TryGetValue(rhinoObject.Attributes.LayerIndex, out int layerMaterialIndex))
             {
-                Color4f objectColor = GetLayerColor(rhinoObject);
+                Color4f objectColor = new Color4f(GetLayerColor(rhinoObject));
                 layerMaterialIndex = CreateSolidColorMaterial(objectColor, doc.Layers[rhinoObject.Attributes.LayerIndex].Name);
                 layerMaterialIndices.Add(rhinoObject.Attributes.LayerIndex, layerMaterialIndex);
             }
@@ -258,7 +265,7 @@ namespace glTF_BinExporter
             return dummy.Materials.AddAndReturnIndex(material);
         }
 
-        Color4f GetObjectColor(RhinoObject rhinoObject)
+        Color GetObjectColor(RhinoObject rhinoObject)
         {
             if (rhinoObject.Attributes.ColorSource == ObjectColorSource.ColorFromLayer)
             {
@@ -266,14 +273,14 @@ namespace glTF_BinExporter
             }
             else
             {
-                return new Color4f(rhinoObject.Attributes.ObjectColor);
+                return rhinoObject.Attributes.ObjectColor;
             }
         }
 
-        Color4f GetLayerColor(RhinoObject rhinoObject)
+        Color GetLayerColor(RhinoObject rhinoObject)
         {
             int layerIndex = rhinoObject.Attributes.LayerIndex;
-            return new Color4f(doc.Layers[layerIndex].Color);
+            return doc.Layers[layerIndex].Color;
         }
 
         public Rhino.Geometry.Mesh[] GetMeshes(RhinoObject rhinoObject)
