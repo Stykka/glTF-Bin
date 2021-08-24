@@ -91,7 +91,7 @@ namespace glTF_BinExporter
             foreach (ObjectExportData exportData in sanitized)
             {
                 int[] materialIndices = null;
-                if(options.ExportMaterials) materialIndices = GetMaterials(exportData.RenderMaterials, exportData.Object);
+                if (options.ExportMaterials) materialIndices = GetMaterials(exportData.RenderMaterials, exportData.Object);
 
                 RhinoMeshGltfConverter meshConverter = new RhinoMeshGltfConverter(exportData, materialIndices, options, binary, dummy, binaryBuffer);
                 int meshIndex = meshConverter.AddMesh();
@@ -176,15 +176,16 @@ namespace glTF_BinExporter
         int[] GetMaterials(RenderMaterial[] materials, RhinoObject rhinoObject)
         {
             RhinoObject[] subObjects = rhinoObject.GetSubObjects();
+            if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
             int[] materialIndices = new int[materials.Length];
 
-            for (int i = 0; i < subObjects.Length; i++)
+            for (int i = 0; i < materials.Length; i++)
             {
                 var material = materials[i];
 
-                if(material == null)
+                if (material == null)
                 {
-                    if(options.UseDisplayColorForUnsetMaterials)
+                    if (options.UseDisplayColorForUnsetMaterials)
                     {
                         if(subObjects[i].Attributes.ColorSource == ObjectColorSource.ColorFromLayer)
                         {
@@ -223,7 +224,7 @@ namespace glTF_BinExporter
             if (!colorMaterials.TryGetValue(colorIndex, out int colorMaterialIndex))
             {
                 colorMaterialIndex = CreateSolidColorMaterial(new Color4f(objectColor), GetColorName(objectColor));
-                colorMaterials.Add(colorIndex, colorIndex);
+                colorMaterials.Add(colorIndex, colorMaterialIndex);
             }
             return colorMaterialIndex;
         }
@@ -242,7 +243,7 @@ namespace glTF_BinExporter
 
         private int GetDefaultMaterial()
         {
-            if(defaultMaterialIndex == -1)
+            if (defaultMaterialIndex == -1)
             {
                 RenderMaterial material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
                 material.Name = "DefaultMaterial";
@@ -328,10 +329,26 @@ namespace glTF_BinExporter
 
             // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
             // First make sure the internal rhino mesh has been created
-            //rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+            rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
 
             // Then get the internal rhino meshes
-            Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
+            //Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
+
+            var subObjects = rhinoObject.GetSubObjects();
+            if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
+            Rhino.Geometry.Mesh[] meshes = new Rhino.Geometry.Mesh[subObjects.Length];
+
+            for (int i = 0; i < subObjects.Length; i++)
+            {
+                var subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
+                if(subMeshes.Length == 0)
+                {
+                    subObjects[i].CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+                    subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
+
+                }
+                meshes[i] = subMeshes[0];
+            }
 
             List<Rhino.Geometry.Mesh> validMeshes = new List<Rhino.Geometry.Mesh>();
 
@@ -400,23 +417,19 @@ namespace glTF_BinExporter
 
                 // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
                 // First make sure the internal rhino mesh has been created
-                rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+                //rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
 
-                var mats = new RenderMaterial[rhinoObject.MeshCount(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh)];
-                for (int i = 0; i < mats.Length; i++)
+                var subObjects = rhinoObject.GetSubObjects();
+                if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
+                var mats = new RenderMaterial[subObjects.Length];
+
+                var components = rhinoObject.SubobjectMaterialComponents;
+                for (int i = 0; i < subObjects.Length; i++)
                 {
-                    foreach (var component in rhinoObject.SubobjectMaterialComponents)
+                    mats[i] = rhinoObject.RenderMaterial;
+                    foreach (var component in components)
                     {
-                        if (component.Index == i)
-                        {
-                            mats[i] = rhinoObject.GetRenderMaterial(component);
-                            break;
-                        }
-                    }
-
-                    if (mats[i] == null)
-                    {
-                        mats[i] = rhinoObject.RenderMaterial;
+                        if (component.Index == i) mats[i] = rhinoObject.GetRenderMaterial(component);
                     }
                 }
 
