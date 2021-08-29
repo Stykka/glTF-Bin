@@ -419,24 +419,11 @@ namespace glTF_BinExporter
                 // First make sure the internal rhino mesh has been created
                 //rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
 
-                var subObjects = rhinoObject.GetSubObjects();
-                if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
-                var mats = new RenderMaterial[subObjects.Length];
-
-                var components = rhinoObject.SubobjectMaterialComponents;
-                for (int i = 0; i < subObjects.Length; i++)
-                {
-                    mats[i] = rhinoObject.RenderMaterial;
-                    foreach (var component in components)
-                    {
-                        if (component.Index == i) mats[i] = rhinoObject.GetRenderMaterial(component);
-                    }
-                }
-
                 var isValidGeometry = Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
 
                 if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
                 {
+                    var mats = GetRenderMaterials(rhinoObject);
                     var meshes = GetMeshes(rhinoObject);
 
                     if (meshes.Length > 0) //Objects need a mesh to export
@@ -461,6 +448,7 @@ namespace glTF_BinExporter
                     // Transform the exploded geo into its correct place
                     foreach (var item in objects.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
                     {
+                        var mats = GetRenderMaterials(item.rhinoObject);
                         var meshes = GetMeshes(item.rhinoObject);
 
                         foreach (var mesh in meshes)
@@ -486,6 +474,29 @@ namespace glTF_BinExporter
             }
 
             return rhinoObjectsRes;
+        }
+
+        private RenderMaterial[] GetRenderMaterials(RhinoObject rhinoObject)
+        {
+            var subObjects = rhinoObject.GetSubObjects();
+            if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
+            var mats = new RenderMaterial[subObjects.Length];
+
+            var components = rhinoObject.SubobjectMaterialComponents;
+            for (int i = 0; i < subObjects.Length; i++)
+            {
+                mats[i] = rhinoObject.RenderMaterial;
+                foreach (var component in components)
+                {
+                    if (component.Index == i) mats[i] = rhinoObject.GetRenderMaterial(component);
+                }
+                if (mats[i] == null)
+                {
+                    mats[i] = doc.Layers[rhinoObject.Attributes.LayerIndex].RenderMaterial;
+                }
+            }
+
+            return mats;
         }
 
         private void ExplodeRecursive(InstanceObject instanceObject, Rhino.Geometry.Transform instanceTransform, List<RhinoObject> pieces, List<Rhino.Geometry.Transform> transforms)
