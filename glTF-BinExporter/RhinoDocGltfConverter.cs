@@ -448,6 +448,14 @@ namespace glTF_BinExporter
                     // Transform the exploded geo into its correct place
                     foreach (var item in objects.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
                     {
+                        if (!doc.Layers[item.rhinoObject.Attributes.LayerIndex].IsVisible) continue;
+
+                        if (!item.rhinoObject.IsMeshable(Rhino.Geometry.MeshType.Any))
+                        {
+                            RhinoApp.WriteLine("Skipping " + GetDebugName(item.rhinoObject) + ", object is not meshable. Object is a " + item.rhinoObject.ObjectType.ToString());
+                            continue;
+                        }
+
                         var mats = GetRenderMaterials(item.rhinoObject);
                         var meshes = GetMeshes(item.rhinoObject);
 
