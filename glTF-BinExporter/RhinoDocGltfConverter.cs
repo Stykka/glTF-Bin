@@ -345,9 +345,9 @@ namespace glTF_BinExporter
                 {
                     subObjects[i].CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
                     subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
-
                 }
-                meshes[i] = subMeshes[0];
+                if (subMeshes.Length == 1) meshes[i] = subMeshes[0];
+                else if (subMeshes.Length > 1) RhinoApp.WriteLine("This shouldn't have happened: An sub object created more than one mesh! RhinoDocGltfConverter.cs line:349");
             }
 
             List<Rhino.Geometry.Mesh> validMeshes = new List<Rhino.Geometry.Mesh>();
