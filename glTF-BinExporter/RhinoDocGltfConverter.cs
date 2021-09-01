@@ -57,7 +57,7 @@ namespace glTF_BinExporter
 
         private Dictionary<int, int> colorMaterials = new Dictionary<int, int>();
 
-        private int defaultMaterialIndex = -1;
+        private int? defaultMaterialIndex = null;
 
         public Gltf ConvertToGltf()
         {
@@ -91,7 +91,11 @@ namespace glTF_BinExporter
             foreach (ObjectExportData exportData in sanitized)
             {
                 int[] materialIndices = null;
-                if (options.ExportMaterials) materialIndices = GetMaterials(exportData.RenderMaterials, exportData.Object);
+
+                if (options.ExportMaterials)
+                {
+                    materialIndices = GetMaterials(exportData.RenderMaterials, exportData.Object);
+                }
 
                 RhinoMeshGltfConverter meshConverter = new RhinoMeshGltfConverter(exportData, materialIndices, options, binary, dummy, binaryBuffer);
                 int meshIndex = meshConverter.AddMesh();
@@ -165,7 +169,7 @@ namespace glTF_BinExporter
 
         public string GetObjectName(RhinoObject rhinoObject)
         {
-            return string.IsNullOrEmpty(rhinoObject.Name) ? null : rhinoObject.Name;
+            return string.IsNullOrEmpty(rhinoObject.Name) ? rhinoObject.Id.ToString() : rhinoObject.Name;
         }
 
         public byte[] GetBinaryBuffer()
@@ -176,7 +180,12 @@ namespace glTF_BinExporter
         int[] GetMaterials(RenderMaterial[] materials, RhinoObject rhinoObject)
         {
             RhinoObject[] subObjects = rhinoObject.GetSubObjects();
-            if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
+
+            if (subObjects.Length == 0)
+            {
+                subObjects = new RhinoObject[1] { rhinoObject };
+            }
+
             int[] materialIndices = new int[materials.Length];
 
             for (int i = 0; i < materials.Length; i++)
@@ -220,12 +229,15 @@ namespace glTF_BinExporter
         private int GetColorMaterial(RhinoObject rhinoObject)
         {
             Color objectColor = GetObjectColor(rhinoObject);
+
             int colorIndex = objectColor.ToArgb();
+
             if (!colorMaterials.TryGetValue(colorIndex, out int colorMaterialIndex))
             {
                 colorMaterialIndex = CreateSolidColorMaterial(new Color4f(objectColor), GetColorName(objectColor));
                 colorMaterials.Add(colorIndex, colorMaterialIndex);
             }
+
             return colorMaterialIndex;
         }
 
@@ -243,14 +255,15 @@ namespace glTF_BinExporter
 
         private int GetDefaultMaterial()
         {
-            if (defaultMaterialIndex == -1)
+            if (defaultMaterialIndex == null)
             {
                 RenderMaterial material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
                 material.Name = "DefaultMaterial";
                 RhinoMaterialGltfConverter materialConverter = new RhinoMaterialGltfConverter(options, binary, dummy, binaryBuffer, material, workflow);
                 defaultMaterialIndex = materialConverter.AddMaterial();
             }
-            return defaultMaterialIndex;
+
+            return defaultMaterialIndex.Value;
         }
 
         private int GetLayerMaterial(RhinoObject rhinoObject)
@@ -335,19 +348,32 @@ namespace glTF_BinExporter
             //Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
 
             var subObjects = rhinoObject.GetSubObjects();
-            if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
+
+            if (subObjects.Length == 0)
+            {
+                subObjects = new RhinoObject[1] { rhinoObject };
+            }
+
             Rhino.Geometry.Mesh[] meshes = new Rhino.Geometry.Mesh[subObjects.Length];
 
             for (int i = 0; i < subObjects.Length; i++)
             {
                 var subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
+
                 if(subMeshes.Length == 0)
                 {
                     subObjects[i].CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
                     subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
                 }
-                if (subMeshes.Length == 1) meshes[i] = subMeshes[0];
-                else if (subMeshes.Length > 1) RhinoApp.WriteLine("This shouldn't have happened: An sub object created more than one mesh! RhinoDocGltfConverter.cs line:349");
+                
+                if (subMeshes.Length == 1)
+                {
+                    meshes[i] = subMeshes[0];
+                }
+                else if (subMeshes.Length > 1)
+                {
+                    RhinoApp.WriteLine("This shouldn't have happened: An sub object created more than one mesh! RhinoDocGltfConverter.cs line:349");
+                }
             }
 
             List<Rhino.Geometry.Mesh> validMeshes = new List<Rhino.Geometry.Mesh>();
@@ -393,16 +419,6 @@ namespace glTF_BinExporter
             return true;
         }
 
-        private string GetDebugName(RhinoObject rhinoObject)
-        {
-            if (string.IsNullOrEmpty(rhinoObject.Name))
-            {
-                return "(Unnamed)";
-            }
-
-            return rhinoObject.Name;
-        }
-
         public List<ObjectExportData> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
         {
             var rhinoObjectsRes = new List<ObjectExportData>();
@@ -411,7 +427,7 @@ namespace glTF_BinExporter
             {
                 if (!rhinoObject.IsMeshable(Rhino.Geometry.MeshType.Any))
                 {
-                    RhinoApp.WriteLine("Skipping " + GetDebugName(rhinoObject) + ", object is not meshable. Object is a " + rhinoObject.ObjectType.ToString());
+                    RhinoApp.WriteLine("Skipping " + GetObjectName(rhinoObject) + ", object is not meshable. Object is a " + rhinoObject.ObjectType.ToString());
                     continue;
                 }
 
@@ -452,7 +468,7 @@ namespace glTF_BinExporter
 
                         if (!item.rhinoObject.IsMeshable(Rhino.Geometry.MeshType.Any))
                         {
-                            RhinoApp.WriteLine("Skipping " + GetDebugName(item.rhinoObject) + ", object is not meshable. Object is a " + item.rhinoObject.ObjectType.ToString());
+                            RhinoApp.WriteLine("Skipping " + GetObjectName(item.rhinoObject) + ", object is not meshable. Object is a " + item.rhinoObject.ObjectType.ToString());
                             continue;
                         }
 
@@ -487,17 +503,28 @@ namespace glTF_BinExporter
         private RenderMaterial[] GetRenderMaterials(RhinoObject rhinoObject)
         {
             var subObjects = rhinoObject.GetSubObjects();
-            if (subObjects.Length == 0) subObjects = new RhinoObject[1] { rhinoObject };
+
+            if (subObjects.Length == 0)
+            {
+                subObjects = new RhinoObject[1] { rhinoObject };
+            }
+
             var mats = new RenderMaterial[subObjects.Length];
 
             var components = rhinoObject.SubobjectMaterialComponents;
+
             for (int i = 0; i < subObjects.Length; i++)
             {
                 mats[i] = rhinoObject.RenderMaterial;
+
                 foreach (var component in components)
                 {
-                    if (component.Index == i) mats[i] = rhinoObject.GetRenderMaterial(component);
+                    if (component.Index == i)
+                    {
+                        mats[i] = rhinoObject.GetRenderMaterial(component);
+                    }
                 }
+
                 if (mats[i] == null)
                 {
                     mats[i] = doc.Layers[rhinoObject.Attributes.LayerIndex].RenderMaterial;
