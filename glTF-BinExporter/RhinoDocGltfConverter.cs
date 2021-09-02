@@ -48,6 +48,8 @@ namespace glTF_BinExporter
 
         private List<byte> binaryBuffer = new List<byte>();
 
+        private Dictionary<int, Node> layers = new Dictionary<int, Node>();
+
         public Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
@@ -92,12 +94,17 @@ namespace glTF_BinExporter
 
                 int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
 
-                if(options.ExportLayers)AddToLayer(RhinoDoc.ActiveDoc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
-                else dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
-
+                if(options.ExportLayers)
+                {
+                    AddToLayer(RhinoDoc.ActiveDoc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
+                }
+                else
+                {
+                    dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
+                }
             }
 
-            if(binary && binaryBuffer.Count > 0)
+            if (binary && binaryBuffer.Count > 0)
             {
                 //have to add the empty buffer for the binary file header
                 dummy.Buffers.Add(new glTFLoader.Schema.Buffer()
@@ -110,25 +117,41 @@ namespace glTF_BinExporter
             return dummy.ToSchemaGltf();
         }
 
-        Dictionary<int, Node> Layers = new Dictionary<int, Node>();
-
         private void AddToLayer(Layer layer, int child)
         {
-            if(Layers.TryGetValue(layer.Index, out Node node))
+            if(layers.TryGetValue(layer.Index, out Node node))
             {
-                if (node.Children == null) node.Children = new int[1] { child };
-                else node.Children = node.Children.Append(child).ToArray();
+                if (node.Children == null)
+                {
+                    node.Children = new int[1] { child };
+                }
+                else
+                {
+                    node.Children = node.Children.Append(child).ToArray();
+                }
             }
             else
             {
-                node = new Node();
-                node.Name = layer.Name;
-                node.Children = new int[1] { child };
-                Layers.Add(layer.Index, node);
+                node = new Node()
+                {
+                    Name = layer.Name,
+                    Children = new int[1] { child },
+                };
+                
+                layers.Add(layer.Index, node);
+
                 int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
+
                 Layer parentLayer = RhinoDoc.ActiveDoc.Layers.FindId(layer.ParentLayerId);
-                if (parentLayer == null) dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
-                else AddToLayer(parentLayer, nodeIndex);
+
+                if (parentLayer == null)
+                {
+                    dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
+                }
+                else
+                {
+                    AddToLayer(parentLayer, nodeIndex);
+                }
             }
         }
 
