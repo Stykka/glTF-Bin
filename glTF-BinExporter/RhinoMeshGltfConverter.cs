@@ -180,7 +180,7 @@ namespace glTF_BinExporter
                                 primitive.Attributes.Add(Constants.TexCoord1AttributeTag, textureCoordinatesAccessorIdx);
                             }
                         }
-                        else if(textureMappings.Length > 1 && options.UV0 != options.UV1)
+                        else if(textureMappings.Length > 1 && textureMappings[1] !=null && options.UV0 != options.UV1)
                         {
                             rhinoMesh.SetTextureCoordinates(textureMappings[1], exportData.ObjectTransform, false);
                             int newTextureCoordinatesAccessorIdx = GetTextureCoordinatesAccessor(rhinoMesh.TextureCoordinates);

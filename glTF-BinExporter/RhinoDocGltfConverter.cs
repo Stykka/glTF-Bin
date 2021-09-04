@@ -345,37 +345,44 @@ namespace glTF_BinExporter
 
             // Need to get a Mesh from the None-mesh object. Using the FastRenderMesh here. Could be made configurable.
             // First make sure the internal rhino mesh has been created
-            rhinoObject.CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+            rhinoObject.CreateMeshes(MeshType.Preview, MeshingParameters.FastRenderMesh, true);
 
             // Then get the internal rhino meshes
-            //Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
+            Rhino.Geometry.Mesh[] meshes;// = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
+            int count = 0;
 
             var subObjects = rhinoObject.GetSubObjects();
-
             if (subObjects.Length == 0)
             {
-                subObjects = new RhinoObject[1] { rhinoObject };
+                meshes = rhinoObject.GetMeshes(MeshType.Preview);
             }
-
-            Rhino.Geometry.Mesh[] meshes = new Rhino.Geometry.Mesh[subObjects.Length];
-
-            for (int i = 0; i < subObjects.Length; i++)
+            else
             {
-                var subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
+                meshes = new Rhino.Geometry.Mesh[subObjects.Length];
+                var jointMeshes = rhinoObject.GetMeshes(MeshType.Preview);
+                jointMeshes = jointMeshes[0].ExplodeAtUnweldedEdges();
 
-                if (subMeshes.Length == 0)
+                for (int i = 0; i < subObjects.Length; i++)
                 {
-                    subObjects[i].CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
-                    subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
-                }
+                    var subMeshes = subObjects[i].GetMeshes(MeshType.Preview);
 
-                if (subMeshes.Length == 1)
-                {
-                    meshes[i] = subMeshes[0];
-                }
-                else if (subMeshes.Length > 1)
-                {
-                    RhinoApp.WriteLine("This shouldn't have happened: An sub object created more than one mesh! RhinoDocGltfConverter.cs line:349");
+                    if (subMeshes.Length == 0)
+                    {
+                        meshes[i] = jointMeshes[i];
+                        //subObjects[i].CreateMeshes(MeshType.Preview, MeshingParameters.FastRenderMesh, true);
+                        //subMeshes = subObjects[i].GetMeshes(MeshType.Preview);
+                        count++;
+                        RhinoApp.WriteLine("Subobject didn't have a mesh! RhinoDocGltfConverter.cs line:370");
+                    }
+
+                    if (subMeshes.Length == 1)
+                    {
+                        meshes[i] = subMeshes[0];
+                    }
+                    else if (subMeshes.Length > 1)
+                    {
+                        RhinoApp.WriteLine("This shouldn't have happened: An sub object created more than one mesh! RhinoDocGltfConverter.cs line:379");
+                    }
                 }
             }
 
@@ -444,6 +451,8 @@ namespace glTF_BinExporter
                 {
                     Transform objectTransform;
                     TextureMapping[] textureMappings = GetTextureMappings(rhinoObject, out objectTransform);
+
+
 
                     var mats = GetRenderMaterials(rhinoObject);
 
