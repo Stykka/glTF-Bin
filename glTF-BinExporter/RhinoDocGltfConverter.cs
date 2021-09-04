@@ -196,7 +196,7 @@ namespace glTF_BinExporter
                 {
                     if (options.UseDisplayColorForUnsetMaterials)
                     {
-                        if(subObjects[i].Attributes.ColorSource == ObjectColorSource.ColorFromLayer)
+                        if (subObjects[i].Attributes.ColorSource == ObjectColorSource.ColorFromLayer)
                         {
                             materialIndices[i] = GetLayerMaterial(rhinoObject);
                         }
@@ -347,32 +347,44 @@ namespace glTF_BinExporter
             // Then get the internal rhino meshes
             //Rhino.Geometry.Mesh[] meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
 
-            var subObjects = rhinoObject.GetSubObjects();
+            Rhino.Geometry.Mesh[] meshes;
 
-            if (subObjects.Length == 0)
+            if (rhinoObject.ObjectType == ObjectType.Extrusion)
             {
-                subObjects = new RhinoObject[1] { rhinoObject };
+                meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
             }
-
-            Rhino.Geometry.Mesh[] meshes = new Rhino.Geometry.Mesh[subObjects.Length];
-
-            for (int i = 0; i < subObjects.Length; i++)
+            else
             {
-                var subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
+                var subObjects = rhinoObject.GetSubObjects();
+                if (subObjects.Length == 0)
+                {
+                    meshes = rhinoObject.GetMeshes(Rhino.Geometry.MeshType.Preview);
+                }
+                else
+                {
+                    meshes = new Rhino.Geometry.Mesh[subObjects.Length];
 
-                if(subMeshes.Length == 0)
-                {
-                    subObjects[i].CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
-                    subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
-                }
-                
-                if (subMeshes.Length == 1)
-                {
-                    meshes[i] = subMeshes[0];
-                }
-                else if (subMeshes.Length > 1)
-                {
-                    RhinoApp.WriteLine("This shouldn't have happened: An sub object created more than one mesh! RhinoDocGltfConverter.cs line:349");
+                    for (int i = 0; i < subObjects.Length; i++)
+                    {
+                        var subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
+                        if (subMeshes.Length == 1)
+                        {
+                            meshes[i] = subMeshes[0];
+                        }
+                        else
+                        {
+                            if (subMeshes.Length == 0)
+                            {
+                                subObjects[i].CreateMeshes(Rhino.Geometry.MeshType.Preview, Rhino.Geometry.MeshingParameters.FastRenderMesh, true);
+                                subMeshes = subObjects[i].GetMeshes(Rhino.Geometry.MeshType.Preview);
+                                RhinoApp.WriteLine("This shouldn't have happened: An sub object had no mesh! RhinoDocGltfConverter.GetMeshes()");
+                            }
+                            else if (subMeshes.Length > 1)
+                            {
+                                RhinoApp.WriteLine("This shouldn't have happened: An sub object created more than one mesh! RhinoDocGltfConverter.cs.GetMeshes()");
+                            }
+                        }
+                    }
                 }
             }
 
