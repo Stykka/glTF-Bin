@@ -87,7 +87,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>Copy "$(TargetPath)" "$(TargetDir)$(ProjectName).rhp"
+    <PostBuildEvent>Copy "$(TargetPath)" "$(TargetDir)$(TargetName).rhp"
 Erase "$(TargetPath)"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
