@@ -10,6 +10,7 @@
     <ReleaseVersion>1.8.0.0</ReleaseVersion>
     <PackageVersion>1.6.0.0</PackageVersion>
     <Authors>Aske Doerge, Joshua Kennedy</Authors>
+    <AssemblyName>glTF-BinExporter</AssemblyName>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
