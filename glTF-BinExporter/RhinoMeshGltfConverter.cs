@@ -13,10 +13,10 @@ namespace glTF_BinExporter
 {
     class RhinoMeshGltfConverter
     {
-        public RhinoMeshGltfConverter(ObjectExportData exportData, int[] materialIndices, glTFExportOptions options, bool binary, gltfSchemaDummy dummy, List<byte> binaryBuffer)
+        public RhinoMeshGltfConverter(ObjectExportData exportData, int? materialIndex, glTFExportOptions options, bool binary, gltfSchemaDummy dummy, List<byte> binaryBuffer)
         {
             this.exportData = exportData;
-            this.materialIndices = materialIndices;
+            this.materialIndex = materialIndex;
             this.options = options;
             this.binary = binary;
             this.dummy = dummy;
@@ -24,7 +24,7 @@ namespace glTF_BinExporter
         }
 
         private ObjectExportData exportData;
-        private int[] materialIndices;
+        private int? materialIndex;
         private glTFExportOptions options = null;
         private bool binary = false;
         private gltfSchemaDummy dummy = null;
@@ -81,15 +81,8 @@ namespace glTF_BinExporter
         {
             List<glTFLoader.Schema.MeshPrimitive> primitives = new List<glTFLoader.Schema.MeshPrimitive>();
 
-            for (int i = 0; i < exportData.Meshes.Length; i++)
+            foreach(Mesh rhinoMesh in exportData.Meshes)
             {
-                if (exportData.Meshes[i] == null)
-                {
-                    continue;
-                }
-
-                var rhinoMesh = exportData.Meshes[i];
-
                 PreprocessMesh(rhinoMesh);
 
                 if(options.UseDracoCompression)
@@ -166,10 +159,7 @@ namespace glTF_BinExporter
                     primitive.Extensions.Add(Constants.DracoMeshCompressionExtensionTag, dracoCompressionObject);
                 }
 
-                if(materialIndices.Length > 0)
-                {
-                    primitive.Material = materialIndices[i];
-                }
+                primitive.Material = materialIndex;
 
                 primitives.Add(primitive);
             }

@@ -219,15 +219,6 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(useSavedSettingsDontShowDialogKey, value);
         }
 
-        private const string exportLayersKey = "ExportLayers";
-        public const bool ExportLayersDefault = false;
-
-        public static bool ExportLayers
-        {
-            get => Instance.Settings.GetBool(exportLayersKey, ExportLayersDefault);
-            set => Instance.Settings.SetBool(exportLayersKey, value);
-        }
-
         public static glTFExportOptions GetSavedOptions()
         {
             return new glTFExportOptions()
@@ -249,8 +240,6 @@ namespace glTF_BinExporter
                 DracoQuantizationBitsPosition = DracoQuantizationBitsPosition,
                 DracoQuantizationBitsNormal = DracoQuantizationBitsNormal,
                 DracoQuantizationBitsTexture = DracoQuantizationBitsTexture,
-
-                ExportLayers = ExportLayers,
             };
         }
 
