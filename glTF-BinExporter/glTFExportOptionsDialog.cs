@@ -15,6 +15,7 @@ namespace glTF_BinExporter
         private CheckBox mapZtoY = new CheckBox();
         private CheckBox exportMaterials = new CheckBox();
         private CheckBox useDisplayColorForUnsetMaterial = new CheckBox();
+        private CheckBox exportLayers = new CheckBox();
 
         private GroupBox subdBox = new GroupBox();
         private CheckBox useSubdControlNet = new CheckBox();
@@ -52,6 +53,8 @@ namespace glTF_BinExporter
             exportMaterials.Text = "Export materials";
 
             useDisplayColorForUnsetMaterial.Text = "Use display color for objects with no material set";
+
+            exportLayers.Text = "Export Layers";
 
             subdBox.Text = "SubD Meshing";
 
@@ -143,6 +146,7 @@ namespace glTF_BinExporter
                         new TableRow(mapZtoY),
                         new TableRow(exportMaterials),
                         new TableRow(useDisplayColorForUnsetMaterial),
+                        new TableRow(exportLayers)
                     },
                 },
             };
@@ -206,6 +210,7 @@ namespace glTF_BinExporter
             mapZtoY.Checked = glTFBinExporterPlugin.MapRhinoZToGltfY;
             exportMaterials.Checked = glTFBinExporterPlugin.ExportMaterials;
             EnableDisableMaterialControls(glTFBinExporterPlugin.ExportMaterials);
+            exportLayers.Checked = glTFBinExporterPlugin.ExportLayers;
 
             useDisplayColorForUnsetMaterial.Checked = glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials;
 
@@ -236,6 +241,7 @@ namespace glTF_BinExporter
             glTFBinExporterPlugin.MapRhinoZToGltfY = GetCheckboxValue(mapZtoY);
             glTFBinExporterPlugin.ExportMaterials = GetCheckboxValue(exportMaterials);
             glTFBinExporterPlugin.UseDisplayColorForUnsetMaterials = GetCheckboxValue(useDisplayColorForUnsetMaterial);
+            glTFBinExporterPlugin.ExportLayers = GetCheckboxValue(exportLayers);
 
             bool controlNet = GetCheckboxValue(useSubdControlNet);
             glTFBinExporterPlugin.SubDExportMode = controlNet ? SubDMode.ControlNet : SubDMode.Surface;

@@ -219,6 +219,15 @@ namespace glTF_BinExporter
             set => Instance.Settings.SetBool(useSavedSettingsDontShowDialogKey, value);
         }
 
+        private const string ExportLayersDialogKey = "ExportLayers";
+        public const bool ExportLayersDialogDefault = false;
+
+        public static bool ExportLayers
+        {
+            get => Instance.Settings.GetBool(ExportLayersDialogKey, ExportLayersDialogDefault);
+            set => Instance.Settings.SetBool(ExportLayersDialogKey, value);
+        }
+
         public static glTFExportOptions GetSavedOptions()
         {
             return new glTFExportOptions()
