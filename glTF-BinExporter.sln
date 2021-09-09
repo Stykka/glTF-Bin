@@ -30,6 +30,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		make_package.sh = make_package.sh
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glTF-BinImporterMac", "glTF-BinImporter\glTF-BinImporterMac.csproj", "{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -148,6 +150,18 @@ Global
 		{C654EA6E-2EF6-4DAD-9267-D7B527D51CF9}.Release|x64.Build.0 = Release|Any CPU
 		{C654EA6E-2EF6-4DAD-9267-D7B527D51CF9}.Release|x86.ActiveCfg = Release|Any CPU
 		{C654EA6E-2EF6-4DAD-9267-D7B527D51CF9}.Release|x86.Build.0 = Release|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Debug|x64.Build.0 = Debug|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Debug|x86.Build.0 = Debug|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Release|x64.ActiveCfg = Release|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Release|x64.Build.0 = Release|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Release|x86.ActiveCfg = Release|Any CPU
+		{B5A1219A-BC5C-49F3-B938-EFD4BB20744B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
