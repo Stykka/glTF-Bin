@@ -23,9 +23,10 @@
     <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="Copy &quot;$(TargetPath)&quot; &quot;$(TargetDir)$(ProjectName).rhp&quot;&#xD;&#xA;Erase &quot;$(TargetPath)&quot;&#xD;&#xA;powershell.exe -nologo -noprofile -command &quot;&amp; { if (Test-Path $(TargetDir)\glTF-BinExporter.rhi) { Remove-Item $(TargetDir)\glTF-BinExporter.rhi }; }&quot;&#xD;&#xA;powershell.exe -nologo -noprofile -command &quot;&amp; { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('.', '$(TargetDir)\..\glTF-BinExporter.rhi'); }&quot;&#xD;&#xA;" />
+    <Exec Command="Copy &quot;$(TargetPath)&quot; &quot;$(TargetDir)$(TargetName).rhp&quot;&#xD;&#xA;Erase &quot;$(TargetPath)&quot;&#xD;&#xA;" />
   </Target>
   <PropertyGroup>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyName>glTF-BinExporter</AssemblyName>
   </PropertyGroup>
 </Project>
