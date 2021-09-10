@@ -46,6 +46,8 @@
   <ItemGroup>
     <Compile Include="KHR_draco_mesh_compression.cs" />
     <Compile Include="KHR_materials_clearcoat.cs" />
+    <Compile Include="KHR_materials_ior.cs" />
+    <Compile Include="KHR_materials_specular.cs" />
     <Compile Include="KHR_materials_transmission.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

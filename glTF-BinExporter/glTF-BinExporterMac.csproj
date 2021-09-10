@@ -10,6 +10,7 @@
     <ReleaseVersion>1.8.0.0</ReleaseVersion>
     <PackageVersion>1.6.0.0</PackageVersion>
     <Authors>Aske Doerge, Joshua Kennedy</Authors>
+    <AssemblyName>glTF-BinExporter</AssemblyName>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -25,7 +26,8 @@
     <None Remove="glTF\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RhinoCommon" Version="7.7.21160.5001" IncludeAssets="compile;build" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="RhinoCommon" Version="7.9.21222.15001" IncludeAssets="compile;build" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\glTFExtensions\glTFExtensions.csproj" />
