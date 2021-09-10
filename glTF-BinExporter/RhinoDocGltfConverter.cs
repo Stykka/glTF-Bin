@@ -197,7 +197,7 @@ namespace glTF_BinExporter
             }
             else if(material == null)
             {
-                material = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
+                material = DefaultMaterial;
             }
 
             Guid materialId = material.Id;
@@ -432,11 +432,6 @@ namespace glTF_BinExporter
                 int layerIndex = rhinoObject.Attributes.LayerIndex;
 
                 renderMaterial = GetLayerMaterial(layerIndex);
-            }
-
-            if(renderMaterial == null)
-            {
-                renderMaterial = DefaultMaterial;
             }
 
             return renderMaterial;
