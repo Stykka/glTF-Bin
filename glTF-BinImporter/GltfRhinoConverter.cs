@@ -93,14 +93,14 @@ namespace glTF_BinImporter
             {
                 for (int i = 0; i < gltf.Materials.Length; i++)
                 {
-                    GltfRhinoMaterialConverter converter = new GltfRhinoMaterialConverter(gltf, gltf.Materials[i], doc, this);
+                    GltfRhinoMaterialConverter converter = new GltfRhinoMaterialConverter(gltf.Materials[i], doc, this);
                     materials.Add(converter.Convert());
                 }
             }
 
             for(int i = 0; i < gltf.Meshes.Length; i++)
             {
-                GltfRhinoMeshConverter converter = new GltfRhinoMeshConverter(gltf, gltf.Meshes[i], this, doc);
+                GltfRhinoMeshConverter converter = new GltfRhinoMeshConverter(gltf.Meshes[i], this, doc);
                 meshHolders.Add(converter.Convert());
             }
 
@@ -397,12 +397,57 @@ namespace glTF_BinImporter
 
         public byte[] GetBuffer(int index)
         {
+            if(index < 0 || index >= buffers.Count)
+            {
+                return null;
+            }
+
             return buffers[index];
         }
 
-        public Rhino.Render.RenderMaterial GetMaterial(int index)
+        public Rhino.Render.RenderMaterial GetMaterial(int? index)
         {
-            return materials[index];
+            if(index == null)
+            {
+                return null;
+            }
+
+            if(index < 0 || index >= materials.Count)
+            {
+                return null;
+            }
+
+            return materials[index.Value];
+        }
+
+        public glTFLoader.Schema.Accessor GetAccessor(int? index)
+        {
+            if (index == null)
+            {
+                return null;
+            }
+
+            if (index < 0 || index >= gltf.Accessors.Length)
+            {
+                return null;
+            }
+
+            return gltf.Accessors[index.Value];
+        }
+
+        public glTFLoader.Schema.BufferView GetBufferView(int? index)
+        {
+            if (index == null)
+            {
+                return null;
+            }
+
+            if (index < 0 || index >= gltf.BufferViews.Length)
+            {
+                return null;
+            }
+
+            return gltf.BufferViews[index.Value];
         }
 
     }

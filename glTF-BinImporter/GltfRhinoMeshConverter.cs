@@ -50,10 +50,10 @@ namespace glTF_BinImporter
 
                 Rhino.DocObjects.RhinoObject rhinoObject = doc.Objects.Find(objectId);
 
-                if (rhinoObject != null && pair.MaterialIndex.HasValue)
-                {
-                    Rhino.Render.RenderMaterial material = converter.GetMaterial(pair.MaterialIndex.Value);
+                Rhino.Render.RenderMaterial material = converter.GetMaterial(pair.MaterialIndex);
 
+                if (rhinoObject != null && material != null)
+                {
                     rhinoObject.RenderMaterial = material;
                     rhinoObject.Attributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
                     rhinoObject.Attributes.Name = pair.Name;
@@ -72,15 +72,13 @@ namespace glTF_BinImporter
         public const string TexCoord0AttributeTag = "TEXCOORD_0";
         public const string VertexColorAttributeTag = "COLOR_0";
 
-        public GltfRhinoMeshConverter(glTFLoader.Schema.Gltf gltf, glTFLoader.Schema.Mesh mesh, GltfRhinoConverter converter, Rhino.RhinoDoc doc)
+        public GltfRhinoMeshConverter(glTFLoader.Schema.Mesh mesh, GltfRhinoConverter converter, Rhino.RhinoDoc doc)
         {
-            this.gltf = gltf;
             this.mesh = mesh;
             this.converter = converter;
             this.doc = doc;
         }
 
-        glTFLoader.Schema.Gltf gltf = null;
         glTFLoader.Schema.Mesh mesh = null;
         GltfRhinoConverter converter = null;
         Rhino.RhinoDoc doc = null;
@@ -134,9 +132,14 @@ namespace glTF_BinImporter
                 return null;
             }
 
-            glTFLoader.Schema.BufferView view = gltf.BufferViews[khr_draco.BufferView];
+            glTFLoader.Schema.BufferView view = converter.GetBufferView(khr_draco.BufferView);
 
             byte[] buffer = converter.GetBuffer(view.Buffer);
+
+            if(buffer == null)
+            {
+                return null;
+            }
 
             int offset = view.ByteOffset;
             int length = view.ByteLength;
@@ -158,14 +161,53 @@ namespace glTF_BinImporter
 
             Rhino.Geometry.Mesh rhinoMesh = new Rhino.Geometry.Mesh();
 
-            glTFLoader.Schema.Accessor indicesAccessor = gltf.Accessors[primitive.Indices.Value];
-            glTFLoader.Schema.Accessor vertexAcessor = gltf.Accessors[primitive.Attributes[PositionAttributeTag]];
+            if(!AttemptConvertVerticesAndIndices(primitive, rhinoMesh)) //Only part that is required
+            {
+                return null;
+            }
 
-            glTFLoader.Schema.BufferView indicesView = gltf.BufferViews[indicesAccessor.BufferView.Value];
-            glTFLoader.Schema.BufferView vertexView = gltf.BufferViews[vertexAcessor.BufferView.Value];
+            if(!AttemptConvertNormals(primitive, rhinoMesh))
+            {
+                rhinoMesh.RebuildNormals();
+            }
+
+            AttemptConvertTextureCoordinates(primitive, rhinoMesh);
+
+            AttemptConvertVertexColors(primitive, rhinoMesh);
+
+            return rhinoMesh;
+        }
+
+        private bool AttemptConvertVerticesAndIndices(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
+        {
+            glTFLoader.Schema.Accessor indicesAccessor = converter.GetAccessor(primitive.Indices);
+            glTFLoader.Schema.Accessor vertexAcessor = null;
+
+            if (primitive.Attributes.TryGetValue(PositionAttributeTag, out int vertexAcessorIndex))
+            {
+                vertexAcessor = converter.GetAccessor(vertexAcessorIndex);
+            }
+            
+            if (indicesAccessor == null || vertexAcessor == null)
+            {
+                return false;
+            }
+
+            glTFLoader.Schema.BufferView indicesView = converter.GetBufferView(indicesAccessor.BufferView);
+            glTFLoader.Schema.BufferView vertexView = converter.GetBufferView(vertexAcessor.BufferView);
+
+            if(indicesView == null || vertexView == null)
+            {
+                return false;
+            }
 
             byte[] indicesBuffer = converter.GetBuffer(indicesView.Buffer);
             byte[] vertexBuffer = converter.GetBuffer(vertexView.Buffer);
+
+            if(indicesBuffer == null || vertexBuffer == null)
+            {
+                return false;
+            }
 
             int indicesOffset = indicesAccessor.ByteOffset + indicesView.ByteOffset;
             int vertexOffset = vertexAcessor.ByteOffset + vertexView.ByteOffset;
@@ -181,11 +223,11 @@ namespace glTF_BinImporter
 
             List<float> floats = new List<float>();
 
-            for(int i = 0; i < vertexAcessor.Count; i++)
+            for (int i = 0; i < vertexAcessor.Count; i++)
             {
                 int index = vertexOffset + vertexStride * i;
 
-                for(int j = 0; j < vertexComponentsCount; j++)
+                for (int j = 0; j < vertexComponentsCount; j++)
                 {
                     int offset = index + j * vertexComponentSize;
 
@@ -194,36 +236,36 @@ namespace glTF_BinImporter
                     floats.Add(f);
                 }
             }
-            
+
             int vertices = floats.Count / 3;
 
-            for(int i = 0; i < vertices; i++)
+            for (int i = 0; i < vertices; i++)
             {
                 int index = i * 3;
-                rhinoMesh.Vertices.Add((double)floats[index], (double)floats[index + 1], (double)floats[index +2]);
+                rhinoMesh.Vertices.Add((double)floats[index], (double)floats[index + 1], (double)floats[index + 2]);
             }
 
             List<uint> indices = new List<uint>();
 
-            for(int i = 0; i < indicesAccessor.Count; i++)
+            for (int i = 0; i < indicesAccessor.Count; i++)
             {
                 int index = indicesOffset + indicesStride * i;
 
-                for(int j = 0; j < indicesComponentsCount; j++)
+                for (int j = 0; j < indicesComponentsCount; j++)
                 {
                     int location = index + j * indicesComponentSize;
 
-                    if(indicesAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_BYTE)
+                    if (indicesAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_BYTE)
                     {
                         byte b = indicesBuffer[location];
                         indices.Add(b);
                     }
-                    else if(indicesAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
+                    else if (indicesAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
                     {
                         ushort s = BitConverter.ToUInt16(indicesBuffer, location);
                         indices.Add(s);
                     }
-                    else if(indicesAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_INT)
+                    else if (indicesAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_INT)
                     {
                         uint u = BitConverter.ToUInt32(indicesBuffer, location);
                         indices.Add(u);
@@ -233,201 +275,263 @@ namespace glTF_BinImporter
             }
 
             int faces = indices.Count / 3;
-            for(int i = 0; i < faces; i++)
+            for (int i = 0; i < faces; i++)
             {
                 int index = i * 3;
-                
+
                 int indexOne = (int)indices[index + 0];
                 int indexTwo = (int)indices[index + 1];
                 int indexThree = (int)indices[index + 2];
 
-                if(ValidFace(indexOne, indexTwo, indexThree, rhinoMesh.Vertices.Count))
+                if (ValidFace(indexOne, indexTwo, indexThree, rhinoMesh.Vertices.Count))
                 {
                     rhinoMesh.Faces.AddFace(indexOne, indexTwo, indexThree);
                 }
             }
 
-            if(primitive.Attributes.TryGetValue(NormalAttributeTag, out int normalAttributeAccessorIndex))
+            return true;
+        }
+
+        private bool AttemptConvertNormals(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
+        {
+            if (!primitive.Attributes.TryGetValue(NormalAttributeTag, out int normalAttributeAccessorIndex))
             {
-                glTFLoader.Schema.Accessor normalsAccessor = gltf.Accessors[normalAttributeAccessorIndex];
-
-                glTFLoader.Schema.BufferView normalsView = gltf.BufferViews[normalsAccessor.BufferView.Value];
-
-                byte[] normalsBuffer = converter.GetBuffer(normalsView.Buffer);
-
-                int normalsOffset = normalsView.ByteOffset + normalsAccessor.ByteOffset;
-
-                int normalsStride = normalsView.ByteStride.HasValue ? normalsView.ByteStride.Value : TotalStride(normalsAccessor.ComponentType, normalsAccessor.Type);
-
-                int normalsComponentsCount = ComponentsCount(normalsAccessor.Type);
-
-                int normalsComponentSize = ComponentSize(normalsAccessor.ComponentType);
-
-                List<float> normalsFloats = new List<float>();
-
-                for(int i = 0; i < normalsAccessor.Count; i++)
-                {
-                    int normalsIndex = normalsOffset + i * normalsStride;
-
-                    for(int j = 0; j < normalsComponentsCount; j++)
-                    {
-                        int location = normalsIndex + j * normalsComponentSize;
-
-                        float normalComponent = BitConverter.ToSingle(normalsBuffer, location);
-
-                        normalsFloats.Add(normalComponent);
-                    }
-                }
-
-                int normals = normalsFloats.Count / 3;
-                for(int i = 0; i < normals; i++)
-                {
-                    int index = i * 3;
-                    rhinoMesh.Normals.Add(normalsFloats[index], normalsFloats[index + 1], normalsFloats[index + 2]);
-                }
-            }
-            else
-            {
-                rhinoMesh.RebuildNormals();
+                return false;
             }
 
-            if(primitive.Attributes.TryGetValue(TexCoord0AttributeTag, out int texCoordsAttributeAccessorIndex))
+            glTFLoader.Schema.Accessor normalsAccessor = converter.GetAccessor(normalAttributeAccessorIndex);
+
+            if (normalsAccessor == null)
             {
-                glTFLoader.Schema.Accessor texCoordsAccessor = gltf.Accessors[texCoordsAttributeAccessorIndex];
+                return false;
+            }
 
-                glTFLoader.Schema.BufferView texCoordsBufferView = gltf.BufferViews[texCoordsAccessor.BufferView.Value];
+            glTFLoader.Schema.BufferView normalsView = converter.GetBufferView(normalsAccessor.BufferView);
 
-                byte[] texCoordsBuffer = converter.GetBuffer(texCoordsBufferView.Buffer);
-                
-                int texCoordsOffset = texCoordsAccessor.ByteOffset + texCoordsBufferView.ByteOffset;
+            if (normalsView == null)
+            {
+                return false;
+            }
 
-                int texCoordsStride = texCoordsBufferView.ByteStride.HasValue ? texCoordsBufferView.ByteStride.Value : TotalStride(texCoordsAccessor.ComponentType, texCoordsAccessor.Type);
+            byte[] normalsBuffer = converter.GetBuffer(normalsView.Buffer);
 
-                int texCoordsComponentCount = ComponentsCount(texCoordsAccessor.Type);
+            if (normalsBuffer == null)
+            {
+                return false;
+            }
 
-                int texCoordsComponentSize = ComponentSize(texCoordsAccessor.ComponentType);
+            int normalsOffset = normalsView.ByteOffset + normalsAccessor.ByteOffset;
 
-                List<float> texCoords = new List<float>();
+            int normalsStride = normalsView.ByteStride.HasValue ? normalsView.ByteStride.Value : TotalStride(normalsAccessor.ComponentType, normalsAccessor.Type);
 
-                for(int i = 0; i < texCoordsAccessor.Count; i++)
+            int normalsComponentsCount = ComponentsCount(normalsAccessor.Type);
+
+            int normalsComponentSize = ComponentSize(normalsAccessor.ComponentType);
+
+            List<float> normalsFloats = new List<float>();
+
+            for (int i = 0; i < normalsAccessor.Count; i++)
+            {
+                int normalsIndex = normalsOffset + i * normalsStride;
+
+                for (int j = 0; j < normalsComponentsCount; j++)
                 {
-                    int texCoordsIndex = texCoordsOffset + i * texCoordsStride;
+                    int location = normalsIndex + j * normalsComponentSize;
 
-                    for(int j = 0; j < texCoordsComponentCount; j++)
-                    {
-                        int location = texCoordsIndex + j * texCoordsComponentSize;
+                    float normalComponent = BitConverter.ToSingle(normalsBuffer, location);
 
-                        float coordinate = 0.0f;
-
-                        if(texCoordsAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.FLOAT)
-                        {
-                            coordinate = BitConverter.ToSingle(texCoordsBuffer, location);
-                        }
-                        else if(texCoordsAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_BYTE)
-                        {
-                            byte byteVal = texCoordsBuffer[location];
-                            coordinate = (float)byteVal / (float)byte.MaxValue;
-                        }
-                        else if(texCoordsAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
-                        {
-                            ushort shortValue = BitConverter.ToUInt16(texCoordsBuffer, location);
-                            coordinate = (float)shortValue / (float)ushort.MaxValue;
-                        }
-
-                        texCoords.Add(coordinate);
-                    }
-                }
-
-                int coordinates = texCoords.Count / 2;
-
-                for(int i = 0; i < coordinates; i++)
-                {
-                    int index = i * 2;
-
-                    Rhino.Geometry.Point2f coordinate = new Rhino.Geometry.Point2f(texCoords[index + 0], texCoords[index + 1]);
-
-                    rhinoMesh.TextureCoordinates.Add(coordinate);
+                    normalsFloats.Add(normalComponent);
                 }
             }
 
-            if(primitive.Attributes.TryGetValue(VertexColorAttributeTag, out int vertexColorAccessorIndex))
+            int normals = normalsFloats.Count / 3;
+            for (int i = 0; i < normals; i++)
             {
-                glTFLoader.Schema.Accessor vertexColorAccessor = gltf.Accessors[vertexColorAccessorIndex];
+                int index = i * 3;
+                rhinoMesh.Normals.Add(normalsFloats[index], normalsFloats[index + 1], normalsFloats[index + 2]);
+            }
 
-                glTFLoader.Schema.BufferView vertexColorBufferView = gltf.BufferViews[vertexColorAccessor.BufferView.Value];
+            return true;
+        }
 
-                byte[] vertexColorBuffer = converter.GetBuffer(vertexColorBufferView.Buffer);
+        private bool AttemptConvertTextureCoordinates(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
+        {
+            if (!primitive.Attributes.TryGetValue(TexCoord0AttributeTag, out int texCoordsAttributeAccessorIndex))
+            {
+                return false;
+            }
 
-                int vertexColorOffset = vertexColorAccessor.ByteOffset + vertexColorBufferView.ByteOffset;
+            glTFLoader.Schema.Accessor texCoordsAccessor = converter.GetAccessor(texCoordsAttributeAccessorIndex);
 
-                int vertexColorStride = vertexColorBufferView.ByteStride.HasValue ? vertexColorBufferView.ByteStride.Value : TotalStride(vertexColorAccessor.ComponentType, vertexColorAccessor.Type);
+            if(texCoordsAccessor == null)
+            {
+                return false;
+            }
 
-                int vertexColorComponentCount = ComponentsCount(vertexColorAccessor.Type);
+            glTFLoader.Schema.BufferView texCoordsBufferView = converter.GetBufferView(texCoordsAccessor.BufferView);
 
-                int vertexColorComponentSize = ComponentSize(vertexColorAccessor.ComponentType);
+            if (texCoordsBufferView == null)
+            {
+                return false;
+            }
 
-                List<float> vertexColors = new List<float>();
+            byte[] texCoordsBuffer = converter.GetBuffer(texCoordsBufferView.Buffer);
 
-                for(int i = 0; i < vertexColorAccessor.Count; i++)
+            if(texCoordsBuffer == null)
+            {
+                return false;
+            }
+
+            int texCoordsOffset = texCoordsAccessor.ByteOffset + texCoordsBufferView.ByteOffset;
+
+            int texCoordsStride = texCoordsBufferView.ByteStride.HasValue ? texCoordsBufferView.ByteStride.Value : TotalStride(texCoordsAccessor.ComponentType, texCoordsAccessor.Type);
+
+            int texCoordsComponentCount = ComponentsCount(texCoordsAccessor.Type);
+
+            int texCoordsComponentSize = ComponentSize(texCoordsAccessor.ComponentType);
+
+            List<float> texCoords = new List<float>();
+
+            for (int i = 0; i < texCoordsAccessor.Count; i++)
+            {
+                int texCoordsIndex = texCoordsOffset + i * texCoordsStride;
+
+                for (int j = 0; j < texCoordsComponentCount; j++)
                 {
-                    int vertexColorIndex = vertexColorOffset + i * vertexColorStride;
+                    int location = texCoordsIndex + j * texCoordsComponentSize;
 
-                    for(int j = 0; j < vertexColorComponentCount; j++)
+                    float coordinate = 0.0f;
+
+                    if (texCoordsAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.FLOAT)
                     {
-                        int location = vertexColorIndex + j * vertexColorComponentSize;
-
-                        float channelColor = 0.0f;
-
-                        if(vertexColorAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.FLOAT)
-                        {
-                            channelColor = BitConverter.ToSingle(vertexColorBuffer, location);
-                        }
-                        else if(vertexColorAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
-                        {
-                            ushort value = BitConverter.ToUInt16(vertexColorBuffer, location);
-                            channelColor = (float)value / (float)ushort.MaxValue;
-                        }
-                        else if(vertexColorAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_BYTE)
-                        {
-                            byte value = vertexColorBuffer[location];
-                            channelColor = (float)value / (float)byte.MaxValue;
-                        }
-
-                        vertexColors.Add(channelColor);
+                        coordinate = BitConverter.ToSingle(texCoordsBuffer, location);
                     }
-                }
-
-                int countVertexColors = vertexColors.Count / vertexColorComponentCount;
-
-                for(int i = 0; i < countVertexColors; i++)
-                {
-                    int index = i * vertexColorComponentCount;
-
-                    if(vertexColorAccessor.Type == glTFLoader.Schema.Accessor.TypeEnum.VEC3)
+                    else if (texCoordsAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_BYTE)
                     {
-                        float r = GltfUtils.Clamp(vertexColors[index + 0], 0.0f, 1.0f);
-                        float g = GltfUtils.Clamp(vertexColors[index + 1], 0.0f, 1.0f);
-                        float b = GltfUtils.Clamp(vertexColors[index + 2], 0.0f, 1.0f);
-
-                        Rhino.Display.Color4f color = new Rhino.Display.Color4f(r, g, b, 1.0f);
-
-                        rhinoMesh.VertexColors.Add(color.AsSystemColor());
+                        byte byteVal = texCoordsBuffer[location];
+                        coordinate = (float)byteVal / (float)byte.MaxValue;
                     }
-                    else if(vertexColorAccessor.Type == glTFLoader.Schema.Accessor.TypeEnum.VEC4)
+                    else if (texCoordsAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
                     {
-                        float r = GltfUtils.Clamp(vertexColors[index + 0], 0.0f, 1.0f);
-                        float g = GltfUtils.Clamp(vertexColors[index + 1], 0.0f, 1.0f);
-                        float b = GltfUtils.Clamp(vertexColors[index + 2], 0.0f, 1.0f);
-                        float a = GltfUtils.Clamp(vertexColors[index + 3], 0.0f, 1.0f);
-
-                        Rhino.Display.Color4f color = new Rhino.Display.Color4f(r, g, b, a);
-
-                        rhinoMesh.VertexColors.Add(color.AsSystemColor());
+                        ushort shortValue = BitConverter.ToUInt16(texCoordsBuffer, location);
+                        coordinate = (float)shortValue / (float)ushort.MaxValue;
                     }
+
+                    texCoords.Add(coordinate);
                 }
             }
 
-            return rhinoMesh;
+            int coordinates = texCoords.Count / 2;
+
+            for (int i = 0; i < coordinates; i++)
+            {
+                int index = i * 2;
+
+                Rhino.Geometry.Point2f coordinate = new Rhino.Geometry.Point2f(texCoords[index + 0], texCoords[index + 1]);
+
+                rhinoMesh.TextureCoordinates.Add(coordinate);
+            }
+
+            return true;
+        }
+
+        private bool AttemptConvertVertexColors(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
+        {
+            if (!primitive.Attributes.TryGetValue(VertexColorAttributeTag, out int vertexColorAccessorIndex))
+            {
+                return false;
+            }
+
+            glTFLoader.Schema.Accessor vertexColorAccessor = converter.GetAccessor(vertexColorAccessorIndex);
+
+            if(vertexColorAccessor == null)
+            {
+                return false;
+            }
+
+            glTFLoader.Schema.BufferView vertexColorBufferView = converter.GetBufferView(vertexColorAccessor.BufferView);
+
+            if(vertexColorBufferView == null)
+            {
+                return false;
+            }
+
+            byte[] vertexColorBuffer = converter.GetBuffer(vertexColorBufferView.Buffer);
+
+            if(vertexColorBuffer == null)
+            {
+                return false;
+            }
+
+            int vertexColorOffset = vertexColorAccessor.ByteOffset + vertexColorBufferView.ByteOffset;
+
+            int vertexColorStride = vertexColorBufferView.ByteStride.HasValue ? vertexColorBufferView.ByteStride.Value : TotalStride(vertexColorAccessor.ComponentType, vertexColorAccessor.Type);
+
+            int vertexColorComponentCount = ComponentsCount(vertexColorAccessor.Type);
+
+            int vertexColorComponentSize = ComponentSize(vertexColorAccessor.ComponentType);
+
+            List<float> vertexColors = new List<float>();
+
+            for (int i = 0; i < vertexColorAccessor.Count; i++)
+            {
+                int vertexColorIndex = vertexColorOffset + i * vertexColorStride;
+
+                for (int j = 0; j < vertexColorComponentCount; j++)
+                {
+                    int location = vertexColorIndex + j * vertexColorComponentSize;
+
+                    float channelColor = 0.0f;
+
+                    if (vertexColorAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.FLOAT)
+                    {
+                        channelColor = BitConverter.ToSingle(vertexColorBuffer, location);
+                    }
+                    else if (vertexColorAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
+                    {
+                        ushort value = BitConverter.ToUInt16(vertexColorBuffer, location);
+                        channelColor = (float)value / (float)ushort.MaxValue;
+                    }
+                    else if (vertexColorAccessor.ComponentType == glTFLoader.Schema.Accessor.ComponentTypeEnum.UNSIGNED_BYTE)
+                    {
+                        byte value = vertexColorBuffer[location];
+                        channelColor = (float)value / (float)byte.MaxValue;
+                    }
+
+                    vertexColors.Add(channelColor);
+                }
+            }
+
+            int countVertexColors = vertexColors.Count / vertexColorComponentCount;
+
+            for (int i = 0; i < countVertexColors; i++)
+            {
+                int index = i * vertexColorComponentCount;
+
+                if (vertexColorAccessor.Type == glTFLoader.Schema.Accessor.TypeEnum.VEC3)
+                {
+                    float r = GltfUtils.Clamp(vertexColors[index + 0], 0.0f, 1.0f);
+                    float g = GltfUtils.Clamp(vertexColors[index + 1], 0.0f, 1.0f);
+                    float b = GltfUtils.Clamp(vertexColors[index + 2], 0.0f, 1.0f);
+
+                    Rhino.Display.Color4f color = new Rhino.Display.Color4f(r, g, b, 1.0f);
+
+                    rhinoMesh.VertexColors.Add(color.AsSystemColor());
+                }
+                else if (vertexColorAccessor.Type == glTFLoader.Schema.Accessor.TypeEnum.VEC4)
+                {
+                    float r = GltfUtils.Clamp(vertexColors[index + 0], 0.0f, 1.0f);
+                    float g = GltfUtils.Clamp(vertexColors[index + 1], 0.0f, 1.0f);
+                    float b = GltfUtils.Clamp(vertexColors[index + 2], 0.0f, 1.0f);
+                    float a = GltfUtils.Clamp(vertexColors[index + 3], 0.0f, 1.0f);
+
+                    Rhino.Display.Color4f color = new Rhino.Display.Color4f(r, g, b, a);
+
+                    rhinoMesh.VertexColors.Add(color.AsSystemColor());
+                }
+            }
+
+            return true;
         }
 
         int TotalStride(glTFLoader.Schema.Accessor.ComponentTypeEnum componentType, glTFLoader.Schema.Accessor.TypeEnum type)

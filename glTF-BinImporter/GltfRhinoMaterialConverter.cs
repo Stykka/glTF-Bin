@@ -10,15 +10,13 @@ namespace glTF_BinImporter
 {
     class GltfRhinoMaterialConverter
     {
-        public GltfRhinoMaterialConverter(glTFLoader.Schema.Gltf gltf, glTFLoader.Schema.Material material, Rhino.RhinoDoc doc, GltfRhinoConverter converter)
+        public GltfRhinoMaterialConverter(glTFLoader.Schema.Material material, Rhino.RhinoDoc doc, GltfRhinoConverter converter)
         {
-            this.gltf = gltf;
             this.material = material;
             this.doc = doc;
             this.converter = converter;
         }
 
-        glTFLoader.Schema.Gltf gltf = null;
         glTFLoader.Schema.Material material = null;
         Rhino.RhinoDoc doc = null;
         GltfRhinoConverter converter = null;
