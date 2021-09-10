@@ -585,11 +585,14 @@ namespace glTF_BinImporter
 
         bool ValidFace(int indexOne, int indexTwo, int indexThree, int vertexCount)
         {
-            if (indexOne > 0 && indexOne < vertexCount &&
-               indexTwo > 0 && indexTwo < vertexCount &&
-               indexThree > 0 && indexThree < vertexCount &&
-               indexOne != indexTwo && indexOne != indexThree &&
-               indexTwo != indexThree)
+            bool indexOneInRange = indexOne >= 0 && indexOne < vertexCount;
+            bool indexTwoInRange = indexTwo >= 0 && indexTwo < vertexCount;
+            bool indexThreeInRange = indexThree >= 0 && indexThree < vertexCount;
+            bool oneNotTwo = indexOne != indexTwo;
+            bool oneNotThree = indexOne != indexThree;
+            bool twoNotThree = indexTwo != indexThree;
+
+            if (indexOneInRange && indexTwoInRange && indexThreeInRange && oneNotTwo && oneNotThree && twoNotThree)
             {
                 return true;
             }
