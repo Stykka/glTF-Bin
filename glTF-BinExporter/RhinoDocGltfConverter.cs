@@ -114,7 +114,7 @@ namespace glTF_BinExporter
 
                 if(options.ExportLayers)
                 {
-                    AddToLayer(RhinoDoc.ActiveDoc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
+                    AddToLayer(doc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
                 }
                 else
                 {
@@ -160,7 +160,7 @@ namespace glTF_BinExporter
 
                 int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
 
-                Layer parentLayer = RhinoDoc.ActiveDoc.Layers.FindId(layer.ParentLayerId);
+                Layer parentLayer = doc.Layers.FindId(layer.ParentLayerId);
 
                 if (parentLayer == null)
                 {
