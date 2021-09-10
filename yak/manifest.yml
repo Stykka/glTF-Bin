@@ -4,6 +4,7 @@ version: 1.8.0.2
 authors:
 - Aske Doerge 
 - Joshua Kennedy
+- Peter Krattenmacher
 description: Import and export plugins for .gltf and .glb files.
 url: https://github.com/Stykka/glTF-Bin
 keywords:
@@ -11,4 +12,5 @@ keywords:
 - glb
 - web
 - export
+- import
 

@@ -47,7 +47,7 @@ namespace glTF_BinExporter
 
             Rhino.DocObjects.RhinoObject[] rhinoObjects = go.Objects().Select(o => o.Object()).ToArray();
 
-            if(!DoExport(dialog.FileName, opts, binary, rhinoObjects, doc.RenderSettings.LinearWorkflow))
+            if(!DoExport(dialog.FileName, opts, binary, doc, rhinoObjects, doc.RenderSettings.LinearWorkflow))
             {
                 return Result.Failure;
             }
@@ -132,9 +132,9 @@ namespace glTF_BinExporter
             };
         }
 
-        public static bool DoExport(string fileName, glTFExportOptions options, bool binary, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects, Rhino.Render.LinearWorkflow workflow)
+        public static bool DoExport(string fileName, glTFExportOptions options, bool binary, RhinoDoc doc, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects, Rhino.Render.LinearWorkflow workflow)
         {
-            RhinoDocGltfConverter converter = new RhinoDocGltfConverter(options, binary, rhinoObjects, workflow);
+            RhinoDocGltfConverter converter = new RhinoDocGltfConverter(options, binary, doc, rhinoObjects, workflow);
             glTFLoader.Schema.Gltf gltf = converter.ConvertToGltf();
 
             if (binary)
