@@ -8,6 +8,8 @@ namespace glTFExtensions
 {
     public class KHR_materials_clearcoat
     {
+        public const string Tag = "KHR_materials_clearcoat";
+
         [Newtonsoft.Json.JsonPropertyAttribute("clearcoatFactor")]
         public float ClearcoatFactor = 0.0f;
 

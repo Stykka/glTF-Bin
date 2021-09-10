@@ -8,6 +8,8 @@ namespace glTFExtensions
 {
     public class KHR_materials_specular
     {
+        public const string Tag = "KHR_materials_specular";
+
         [Newtonsoft.Json.JsonPropertyAttribute("specularFactor")]
         public float SpecularFactor = 1.0f;
 
