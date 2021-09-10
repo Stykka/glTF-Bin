@@ -11,11 +11,12 @@ using Rhino.Display;
 
 namespace glTF_BinExporter
 {
-    public struct ObjectExportData
+    public class ObjectExportData
     {
-        public Rhino.Geometry.Mesh[] Meshes;
-        public RenderMaterial RenderMaterial;
-        public RhinoObject Object;
+        public Rhino.Geometry.Mesh[] Meshes = null;
+        public Rhino.Geometry.Transform Transform = Rhino.Geometry.Transform.Identity;
+        public RenderMaterial RenderMaterial = null;
+        public RhinoObject Object = null;
     }
 
     class RhinoDocGltfConverter
@@ -54,6 +55,19 @@ namespace glTF_BinExporter
 
         private Dictionary<int, Node> layers = new Dictionary<int, Node>();
 
+        private RenderMaterial defaultMaterial = null;
+        private RenderMaterial DefaultMaterial
+        {
+            get
+            {
+                if(defaultMaterial == null)
+                {
+                    defaultMaterial = Rhino.DocObjects.Material.DefaultMaterial.RenderMaterial;
+                }
+
+                return defaultMaterial;
+            }
+        }
         public Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
@@ -314,71 +328,128 @@ namespace glTF_BinExporter
 
         public List<ObjectExportData> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
         {
-            var rhinoObjectsRes = new List<ObjectExportData>();
+            List<ObjectExportData> explodedObjects = new List<ObjectExportData>();
 
             foreach (var rhinoObject in rhinoObjects)
             {
-                if (!rhinoObject.IsMeshable(Rhino.Geometry.MeshType.Any))
+                if (rhinoObject.ObjectType == ObjectType.InstanceReference && rhinoObject is InstanceObject instanceObject)
                 {
-                    RhinoApp.WriteLine("Skipping " + GetDebugName(rhinoObject) + ", object is not meshable. Object is a " + rhinoObject.ObjectType.ToString());
-                    continue;
-                }
-
-                var mat = rhinoObject.RenderMaterial;
-
-                var isValidGeometry = Constants.ValidObjectTypes.Contains(rhinoObject.ObjectType);
-
-                if (isValidGeometry && rhinoObject.ObjectType != ObjectType.InstanceReference)
-                {
-                    var meshes = GetMeshes(rhinoObject);
-
-                    if (meshes.Length > 0) //Objects need a mesh to export
-                    {
-                        rhinoObjectsRes.Add(new ObjectExportData()
-                        {
-                            Meshes = meshes,
-                            RenderMaterial = mat,
-                            Object = rhinoObject,
-                        });
-                    }
-                }
-                else if (rhinoObject.ObjectType == ObjectType.InstanceReference)
-                {
-                    InstanceObject instanceObject = rhinoObject as InstanceObject;
-
-                    List<RhinoObject> objects = new List<RhinoObject>();
+                    List<RhinoObject> pieces = new List<RhinoObject>();
                     List<Rhino.Geometry.Transform> transforms = new List<Rhino.Geometry.Transform>();
 
-                    ExplodeRecursive(instanceObject, instanceObject.InstanceXform, objects, transforms);
+                    ExplodeRecursive(instanceObject, Rhino.Geometry.Transform.Identity, pieces, transforms);
 
-                    // Transform the exploded geo into its correct place
-                    foreach (var item in objects.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
+                    foreach (var item in pieces.Zip(transforms, (rObj, trans) => (rhinoObject: rObj, trans)))
                     {
-                        var meshes = GetMeshes(item.rhinoObject);
-
-                        foreach (var mesh in meshes)
+                        explodedObjects.Add(new ObjectExportData()
                         {
-                            mesh.Transform(item.trans);
-                        }
-
-                        if (meshes.Length > 0) //Objects need a mesh to export
-                        {
-                            rhinoObjectsRes.Add(new ObjectExportData()
-                            {
-                                Meshes = meshes,
-                                RenderMaterial = mat,
-                                Object = item.rhinoObject,
-                            });
-                        }
+                            Object = item.rhinoObject,
+                            Transform = item.trans,
+                            RenderMaterial = GetObjectMaterial(item.rhinoObject),
+                        });
                     }
                 }
                 else
                 {
-                    RhinoApp.WriteLine("Unknown geometry type encountered.");
+                    explodedObjects.Add(new ObjectExportData()
+                    {
+                        Object = rhinoObject,
+                        RenderMaterial = GetObjectMaterial(rhinoObject),
+                    });
                 }
             }
 
-            return rhinoObjectsRes;
+            //Remove Unmeshable
+            explodedObjects.RemoveAll(x => !x.Object.IsMeshable(Rhino.Geometry.MeshType.Any));
+
+            foreach (var item in explodedObjects)
+            {
+                //Mesh
+
+                if (item.Object.ObjectType == ObjectType.SubD && item.Object.Geometry is Rhino.Geometry.SubD subd)
+                {
+                    if (options.SubDExportMode == SubDMode.ControlNet)
+                    {
+                        Rhino.Geometry.Mesh mesh = Rhino.Geometry.Mesh.CreateFromSubDControlNet(subd);
+
+                        mesh.Transform(item.Transform);
+
+                        item.Meshes = new Rhino.Geometry.Mesh[] { mesh };
+                    }
+                    else
+                    {
+                        int level = options.SubDLevel;
+
+                        Rhino.Geometry.Mesh mesh = Rhino.Geometry.Mesh.CreateFromSubD(subd, level);
+
+                        mesh.Transform(item.Transform);
+
+                        item.Meshes = new Rhino.Geometry.Mesh[] { mesh };
+                    }
+                }
+                else
+                {
+                    Rhino.Geometry.MeshingParameters parameters = item.Object.GetRenderMeshParameters();
+
+                    if (item.Object.MeshCount(Rhino.Geometry.MeshType.Render, parameters) == 0)
+                    {
+                        item.Object.CreateMeshes(Rhino.Geometry.MeshType.Render, parameters, false);
+                    }
+
+                    List<Rhino.Geometry.Mesh> meshes = new List<Rhino.Geometry.Mesh>(item.Object.GetMeshes(Rhino.Geometry.MeshType.Render));
+
+                    foreach (Rhino.Geometry.Mesh mesh in meshes)
+                    {
+                        mesh.EnsurePrivateCopy();
+                        mesh.Transform(item.Transform);
+                    }
+
+                    //Remove bad meshes
+                    meshes.RemoveAll(x => x == null || !MeshIsValidForExport(x));
+
+                    item.Meshes = meshes.ToArray();
+                }
+            }
+
+            //Remove meshless objects
+            explodedObjects.RemoveAll(x => x.Meshes.Length == 0);
+
+            return explodedObjects;
+        }
+
+        private RenderMaterial GetObjectMaterial(Rhino.DocObjects.RhinoObject rhinoObject)
+        {
+            ObjectMaterialSource source = rhinoObject.Attributes.MaterialSource;
+
+            Rhino.Render.RenderMaterial renderMaterial = null;
+
+            if(source == ObjectMaterialSource.MaterialFromObject)
+            {
+                renderMaterial = rhinoObject.RenderMaterial;
+            }
+            else if (source == ObjectMaterialSource.MaterialFromLayer)
+            {
+                int layerIndex = rhinoObject.Attributes.LayerIndex;
+
+                renderMaterial = GetLayerMaterial(layerIndex);
+            }
+
+            if(renderMaterial == null)
+            {
+                renderMaterial = DefaultMaterial;
+            }
+
+            return renderMaterial;
+        }
+
+        private Rhino.Render.RenderMaterial GetLayerMaterial(int layerIndex)
+        {
+            if(layerIndex < 0 || layerIndex >= doc.Layers.Count)
+            {
+                return null;
+            }
+
+            return doc.Layers[layerIndex].RenderMaterial;
         }
 
         private void ExplodeRecursive(InstanceObject instanceObject, Rhino.Geometry.Transform instanceTransform, List<RhinoObject> pieces, List<Rhino.Geometry.Transform> transforms)
