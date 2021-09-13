@@ -12,6 +12,14 @@ using System.Threading.Tasks;
 
 namespace glTF_BinExporter
 {
+    enum RgbaChannel
+    {
+        Red = 0,
+        Green = 1,
+        Blue = 2,
+        Alpha = 3,
+    }
+
     class RhinoMaterialGltfConverter
     {
         public RhinoMaterialGltfConverter(glTFExportOptions options, bool binary, gltfSchemaDummy dummy, List<byte> binaryBuffer, RenderMaterial renderMaterial, LinearWorkflow workflow)
@@ -60,15 +68,22 @@ namespace glTF_BinExporter
             Rhino.DocObjects.Texture clearcoatTexture = pbr.GetTexture(TextureType.PBR_Clearcoat);
             Rhino.DocObjects.Texture clearcoatRoughessTexture = pbr.GetTexture(TextureType.PBR_ClearcoatRoughness);
             Rhino.DocObjects.Texture clearcoatNormalTexture = pbr.GetTexture(TextureType.PBR_ClearcoatBump);
+            Rhino.DocObjects.Texture specularTexture = pbr.GetTexture(TextureType.PBR_Specular);
 
             HandleBaseColor(rhinoMaterial, material);
 
-            if (metallicTexture != null || roughnessTexture != null)
+            bool hasMetalTexture = metallicTexture == null ? false : metallicTexture.Enabled;
+            bool hasRoughnessTexture = roughnessTexture == null ? false : roughnessTexture.Enabled;
+
+            if (hasMetalTexture || hasRoughnessTexture)
             {
                 material.PbrMetallicRoughness.MetallicRoughnessTexture = AddMetallicRoughnessTexture(rhinoMaterial);
 
-                material.PbrMetallicRoughness.MetallicFactor = 1.0f;
-                material.PbrMetallicRoughness.RoughnessFactor = 1.0f;
+                float metallic = metallicTexture == null ? (float)pbr.Metallic : GetTextureWeight(metallicTexture);
+                float roughness = roughnessTexture == null ? (float)pbr.Roughness : GetTextureWeight(roughnessTexture);
+
+                material.PbrMetallicRoughness.MetallicFactor = metallic;
+                material.PbrMetallicRoughness.RoughnessFactor = roughness;
             }
             else
             {
@@ -83,7 +98,7 @@ namespace glTF_BinExporter
 
             if (occlusionTexture != null && occlusionTexture.Enabled)
             {
-                material.OcclusionTexture = AddTextureOcclusion(occlusionTexture.FileReference.FullPath);
+                material.OcclusionTexture = AddTextureOcclusion(occlusionTexture);
             }
 
             if (emissiveTexture != null && emissiveTexture.Enabled)
@@ -126,15 +141,17 @@ namespace glTF_BinExporter
 
             if (opacityTexture != null && opacityTexture.Enabled)
             {
-                transmission.TransmissionTexture = CreateOpacityTexture(opacityTexture);
-                transmission.TransmissionFactor = 1.0f;
+                //Transmission texture is stored in an images R channel
+                //https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_transmission/README.md#properties
+                transmission.TransmissionTexture = GetSingleChannelTexture(opacityTexture, RgbaChannel.Red, true);
+                transmission.TransmissionFactor = GetTextureWeight(opacityTexture);
             }
             else
             {
                 transmission.TransmissionFactor = 1.0f - (float)pbr.Opacity;
             }
 
-            material.Extensions.Add(Constants.MaterialsTransmissionExtensionTag, transmission);
+            material.Extensions.Add(glTFExtensions.KHR_materials_transmission.Tag, transmission);
 
             //Clearcoat => Clearcoat https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_clearcoat/README.md
 
@@ -143,7 +160,7 @@ namespace glTF_BinExporter
             if(clearcoatTexture != null && clearcoatTexture.Enabled)
             {
                 clearcoat.ClearcoatTexture = AddTexture(clearcoatTexture.FileReference.FullPath);
-                clearcoat.ClearcoatFactor = 1.0f;
+                clearcoat.ClearcoatFactor = GetTextureWeight(clearcoatTexture);
             }
             else
             {
@@ -153,7 +170,7 @@ namespace glTF_BinExporter
             if(clearcoatRoughessTexture != null && clearcoatRoughessTexture.Enabled)
             {
                 clearcoat.ClearcoatRoughnessTexture = AddTexture(clearcoatRoughessTexture.FileReference.FullPath);
-                clearcoat.ClearcoatRoughnessFactor = 1.0f;
+                clearcoat.ClearcoatRoughnessFactor = GetTextureWeight(clearcoatRoughessTexture);
             }
             else
             {
@@ -165,12 +182,38 @@ namespace glTF_BinExporter
                 clearcoat.ClearcoatNormalTexture = AddTextureNormal(clearcoatNormalTexture);
             }
 
-            material.Extensions.Add(Constants.MaterialsClearcoatExtensionTag, clearcoat);
+            material.Extensions.Add(glTFExtensions.KHR_materials_clearcoat.Tag, clearcoat);
+
+            //Opacity IOR -> IOR https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_ior
+
+            glTFExtensions.KHR_materials_ior ior = new glTFExtensions.KHR_materials_ior()
+            {
+                Ior = (float)pbr.OpacityIOR,
+            };
+
+            material.Extensions.Add(glTFExtensions.KHR_materials_ior.Tag, ior);
+
+            //Specular -> Specular https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_specular
+
+            glTFExtensions.KHR_materials_specular specular = new glTFExtensions.KHR_materials_specular();
+
+            if(specularTexture != null && specularTexture.Enabled)
+            {
+                //Specular is stored in the textures alpha channel
+                specular.SpecularTexture = GetSingleChannelTexture(specularTexture, RgbaChannel.Alpha, false);
+                specular.SpecularFactor = GetTextureWeight(specularTexture);
+            }
+            else
+            {
+                specular.SpecularFactor = (float)pbr.Specular;
+            }
+
+            material.Extensions.Add(glTFExtensions.KHR_materials_specular.Tag, specular);
 
             return dummy.Materials.AddAndReturnIndex(material);
         }
 
-        glTFLoader.Schema.TextureInfo CreateOpacityTexture(Rhino.DocObjects.Texture texture)
+        glTFLoader.Schema.TextureInfo GetSingleChannelTexture(Rhino.DocObjects.Texture texture, RgbaChannel channel, bool invert)
         {
             string path = texture.FileReference.FullPath;
 
@@ -178,21 +221,22 @@ namespace glTF_BinExporter
 
             Bitmap final = new Bitmap(bmp.Width, bmp.Height);
 
-            //Transmission texture is stored in an images R channel
-            //https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_transmission/README.md#properties
             for (int i = 0; i < bmp.Width; i++)
             {
                 for(int j = 0; j < bmp.Height; j++)
                 {
                     Color4f color = new Color4f(bmp.GetPixel(i, j));
 
-                    float value = 1.0f - color.L;
+                    float value = color.L;
 
-                    int r = (int)(value * 255.0f);
+                    if(invert)
+                    {
+                        value = 1.0f - value;
+                    }
 
-                    r = Math.Max(Math.Min(r, 255), 0);
+                    Color colorFinal = GetSingleChannelColor(value, channel);
 
-                    final.SetPixel(i, j, Color.FromArgb(r, 0, 0));
+                    final.SetPixel(i, j, colorFinal);
                 }
             }
 
@@ -205,6 +249,27 @@ namespace glTF_BinExporter
             };
 
             return textureInfo;
+        }
+
+        private Color GetSingleChannelColor(float value, RgbaChannel channel)
+        {
+            int i = (int)(value * 255.0f);
+
+            i = Math.Max(Math.Min(i, 255), 0);
+
+            switch (channel)
+            {
+                case RgbaChannel.Alpha:
+                    return Color.FromArgb(i, 0, 0, 0);
+                case RgbaChannel.Red:
+                    return Color.FromArgb(0, i, 0, 0);
+                case RgbaChannel.Green:
+                    return Color.FromArgb(0, 0, i, 0);
+                case RgbaChannel.Blue:
+                    return Color.FromArgb(0, 0, 0, i);
+            }
+
+            return Color.FromArgb(i, i, i, i);
         }
 
         void HandleBaseColor(Rhino.DocObjects.Material rhinoMaterial, glTFLoader.Schema.Material gltfMaterial)
@@ -472,13 +537,13 @@ namespace glTF_BinExporter
         {
             int textureIdx = AddNormalTexture(normalTexture);
 
-            normalTexture.GetAlphaBlendValues(out double constant, out double a0, out double a1, out double a2, out double a3);
+            float weight = GetTextureWeight(normalTexture);
 
             return new glTFLoader.Schema.MaterialNormalTextureInfo()
             {
                 Index = textureIdx,
                 TexCoord = 0,
-                Scale = (float)constant,
+                Scale = weight,
             };
         }
 
@@ -494,15 +559,15 @@ namespace glTF_BinExporter
             return GetTextureFromBitmap(bmp);
         }
 
-        private glTFLoader.Schema.MaterialOcclusionTextureInfo AddTextureOcclusion(string texturePath)
+        private glTFLoader.Schema.MaterialOcclusionTextureInfo AddTextureOcclusion(Rhino.DocObjects.Texture texture)
         {
-            int textureIdx = AddTextureToBuffers(texturePath);
+            int textureIdx = AddTextureToBuffers(texture.FileReference.FullPath);
 
             return new glTFLoader.Schema.MaterialOcclusionTextureInfo()
             {
                 Index = textureIdx,
                 TexCoord = 0,
-                Strength = 0.9f
+                Strength = GetTextureWeight(texture),
             };
         }
 
@@ -556,9 +621,6 @@ namespace glTF_BinExporter
             // Copy Metal to the blue channel, roughness to the green
             var bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            float metallic = (float)rhinoMaterial.PhysicallyBased.Metallic;
-            float roughness = (float)rhinoMaterial.PhysicallyBased.Roughness;
-
             for (var j = 0; j < height - 1; j += 1)
             {
                 for (var i = 0; i < width - 1; i += 1)
@@ -568,26 +630,19 @@ namespace glTF_BinExporter
 
                     Point3d uvw = new Point3d(x, y, 0.0);
 
-                    float g = 0;
-                    float b = 0;
+                    float g = 1.0f;
+                    float b = 1.0f;
+
                     if (hasMetalTexture)
                     {
                         Color4f metal = evalMetal.GetColor(uvw, Vector3d.Zero, Vector3d.Zero);
                         b = metal.L; //grayscale maps, so we want lumonosity
-                    }
-                    else
-                    {
-                        b = metallic;
                     }
 
                     if (hasRoughnessTexture)
                     {
                         Color4f roughnessColor = evalRoughness.GetColor(uvw, Vector3d.ZAxis, Vector3d.Zero);
                         g = roughnessColor.L; //grayscale maps, so we want lumonosity
-                    }
-                    else
-                    {
-                        g = roughness;
                     }
 
                     Color4f color = new Color4f(0.0f, g, b, 1.0f);
@@ -697,6 +752,13 @@ namespace glTF_BinExporter
 
                 return imageStream.ToArray();
             }
+        }
+
+        private float GetTextureWeight(Rhino.DocObjects.Texture texture)
+        {
+            texture.GetAlphaBlendValues(out double constant, out double a0, out double a1, out double a2, out double a3);
+
+            return (float)constant;
         }
 
     }

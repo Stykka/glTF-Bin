@@ -156,7 +156,7 @@ namespace glTF_BinExporter
 
                     primitive.Extensions = new Dictionary<string, object>();
 
-                    primitive.Extensions.Add(Constants.DracoMeshCompressionExtensionTag, dracoCompressionObject);
+                    primitive.Extensions.Add(glTFExtensions.KHR_draco_mesh_compression.Tag, dracoCompressionObject);
                 }
 
                 primitive.Material = materialIndex;
@@ -273,7 +273,7 @@ namespace glTF_BinExporter
             {
                 Uri = Constants.TextBufferHeader + Convert.ToBase64String(bytes),
                 ByteLength = length,
-            };
+            }; 
 
             return dummy.Buffers.AddAndReturnIndex(buffer);
         }

@@ -112,22 +112,22 @@ namespace glTF_BinImporter
 
             if(material.Extensions != null)
             {
-                if(material.Extensions.TryGetValue("KHR_materials_clearcoat", out object clearcoatValue))
+                if(material.Extensions.TryGetValue(glTFExtensions.KHR_materials_clearcoat.Tag, out object clearcoatValue))
                 {
                     clearcoatText = clearcoatValue.ToString();
                 }
 
-                if(material.Extensions.TryGetValue("KHR_materials_transmission", out object transmissionValue))
+                if(material.Extensions.TryGetValue(glTFExtensions.KHR_materials_transmission.Tag, out object transmissionValue))
                 {
                     transmissionText = transmissionValue.ToString();
                 }
 
-                if(material.Extensions.TryGetValue("KHR_materials_ior", out object iorValue))
+                if(material.Extensions.TryGetValue(glTFExtensions.KHR_materials_ior.Tag, out object iorValue))
                 {
                     iorText = iorValue.ToString();
                 }
 
-                if(material.Extensions.TryGetValue("KHR_materials_specular", out object specularValue))
+                if(material.Extensions.TryGetValue(glTFExtensions.KHR_materials_specular.Tag, out object specularValue))
                 {
                     specularText = specularValue.ToString();
                 }

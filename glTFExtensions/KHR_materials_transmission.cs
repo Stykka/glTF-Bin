@@ -8,6 +8,8 @@ namespace glTFExtensions
 {
     public class KHR_materials_transmission
     {
+        public const string Tag = "KHR_materials_transmission";
+
         [Newtonsoft.Json.JsonPropertyAttribute("transmissionFactor")]
         public float TransmissionFactor = 0.0f;
 
