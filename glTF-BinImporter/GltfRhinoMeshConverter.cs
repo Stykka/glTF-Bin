@@ -113,7 +113,7 @@ namespace glTF_BinImporter
 
         Rhino.Geometry.Mesh GetMesh(glTFLoader.Schema.MeshPrimitive primitive)
         {
-            if (primitive.Extensions != null && primitive.Extensions.TryGetValue("KHR_draco_mesh_compression", out object value))
+            if (primitive.Extensions != null && primitive.Extensions.TryGetValue(glTFExtensions.KHR_draco_mesh_compression.Tag, out object value))
             {
                 return ConvertDraco(value.ToString());
             }

@@ -88,12 +88,14 @@ namespace glTF_BinExporter
 
             if(options.UseDracoCompression)
             {
-                dummy.ExtensionsUsed.Add(Constants.DracoMeshCompressionExtensionTag);
-                dummy.ExtensionsRequired.Add(Constants.DracoMeshCompressionExtensionTag);
+                dummy.ExtensionsUsed.Add(glTFExtensions.KHR_draco_mesh_compression.Tag);
+                dummy.ExtensionsRequired.Add(glTFExtensions.KHR_draco_mesh_compression.Tag);
             }
 
-            dummy.ExtensionsUsed.Add(Constants.MaterialsTransmissionExtensionTag);
-            dummy.ExtensionsUsed.Add(Constants.MaterialsClearcoatExtensionTag);
+            dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_transmission.Tag);
+            dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_clearcoat.Tag);
+            dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_ior.Tag);
+            dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_specular.Tag);
 
             var sanitized = SanitizeRhinoObjects(objects);
 
