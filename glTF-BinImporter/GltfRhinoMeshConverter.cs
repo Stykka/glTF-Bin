@@ -152,13 +152,6 @@ namespace glTF_BinImporter
 
         Rhino.Geometry.Mesh ConvertPrimtive(glTFLoader.Schema.MeshPrimitive primitive)
         {
-            bool canConvert = primitive.Indices.HasValue && primitive.Attributes.ContainsKey(PositionAttributeTag);
-
-            if(!canConvert)
-            {
-                return null;
-            }
-
             Rhino.Geometry.Mesh rhinoMesh = new Rhino.Geometry.Mesh();
 
             if(!AttemptConvertVerticesAndIndices(primitive, rhinoMesh)) //Only part that is required
@@ -180,70 +173,103 @@ namespace glTF_BinImporter
 
         private bool AttemptConvertVerticesAndIndices(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
         {
-            glTFLoader.Schema.Accessor indicesAccessor = converter.GetAccessor(primitive.Indices);
-            glTFLoader.Schema.Accessor vertexAcessor = null;
-
-            if (primitive.Attributes.TryGetValue(PositionAttributeTag, out int vertexAcessorIndex))
+            if(!AttemptConvertVertices(primitive, rhinoMesh))
             {
-                vertexAcessor = converter.GetAccessor(vertexAcessorIndex);
+                return false;
             }
-            
-            if (indicesAccessor == null || vertexAcessor == null)
+
+            return HandleIndices(primitive, rhinoMesh);
+        }
+
+        private bool HandleIndices(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
+        {
+            if(primitive.Indices.HasValue)
+            {
+                return AttemptConvertIndices(primitive, rhinoMesh);
+            }
+            else if (primitive.Mode == glTFLoader.Schema.MeshPrimitive.ModeEnum.TRIANGLES)
+            {
+                return HandleTrianglesMode(rhinoMesh);
+            }
+            else if(primitive.Mode == glTFLoader.Schema.MeshPrimitive.ModeEnum.TRIANGLE_STRIP)
+            {
+                return HandleTriangleStripMode(rhinoMesh);
+            }
+            else if(primitive.Mode == glTFLoader.Schema.MeshPrimitive.ModeEnum.TRIANGLE_FAN)
+            {
+                return HandleTriangleFanMode(rhinoMesh);
+            }
+
+            return false;
+        }
+
+        private bool HandleTriangleFanMode(Rhino.Geometry.Mesh rhinoMesh)
+        {
+            for (int i = 1; i < rhinoMesh.Vertices.Count - 1; i++)
+            {
+                Rhino.Geometry.MeshFace face = new Rhino.Geometry.MeshFace(0, i, i + 1);
+
+                rhinoMesh.Faces.AddFace(face);
+            }
+
+            return true;
+        }
+
+        private bool HandleTriangleStripMode(Rhino.Geometry.Mesh rhinoMesh)
+        {
+            for(int i = 0; i < rhinoMesh.Vertices.Count - 2; i++)
+            {
+                Rhino.Geometry.MeshFace face = new Rhino.Geometry.MeshFace(i, i + 1, i + 2);
+
+                rhinoMesh.Faces.AddFace(face);
+            }
+
+            return true;
+        }
+
+        private bool HandleTrianglesMode(Rhino.Geometry.Mesh rhinoMesh)
+        {
+            int count = rhinoMesh.Vertices.Count / 3;
+
+            for(int i = 0; i < count; i++)
+            {
+                int index = i * 3;
+
+                Rhino.Geometry.MeshFace face = new Rhino.Geometry.MeshFace(index, index + 1, index + 2);
+
+                rhinoMesh.Faces.AddFace(face);
+            }
+
+            return true;
+        }
+
+        private bool AttemptConvertIndices(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
+        {
+            glTFLoader.Schema.Accessor indicesAccessor = converter.GetAccessor(primitive.Indices);
+
+            if (indicesAccessor == null)
             {
                 return false;
             }
 
             glTFLoader.Schema.BufferView indicesView = converter.GetBufferView(indicesAccessor.BufferView);
-            glTFLoader.Schema.BufferView vertexView = converter.GetBufferView(vertexAcessor.BufferView);
 
-            if(indicesView == null || vertexView == null)
+            if (indicesView == null)
             {
                 return false;
             }
 
             byte[] indicesBuffer = converter.GetBuffer(indicesView.Buffer);
-            byte[] vertexBuffer = converter.GetBuffer(vertexView.Buffer);
 
-            if(indicesBuffer == null || vertexBuffer == null)
+            if (indicesBuffer == null)
             {
                 return false;
             }
 
             int indicesOffset = indicesAccessor.ByteOffset + indicesView.ByteOffset;
-            int vertexOffset = vertexAcessor.ByteOffset + vertexView.ByteOffset;
-
             int indicesStride = indicesView.ByteStride.HasValue ? indicesView.ByteStride.Value : TotalStride(indicesAccessor.ComponentType, indicesAccessor.Type);
-            int vertexStride = vertexView.ByteStride.HasValue ? vertexView.ByteStride.Value : TotalStride(vertexAcessor.ComponentType, vertexAcessor.Type);
-
             int indicesComponentsCount = ComponentsCount(indicesAccessor.Type);
-            int vertexComponentsCount = ComponentsCount(vertexAcessor.Type);
-
             int indicesComponentSize = ComponentSize(indicesAccessor.ComponentType);
-            int vertexComponentSize = ComponentSize(vertexAcessor.ComponentType);
-
-            List<float> floats = new List<float>();
-
-            for (int i = 0; i < vertexAcessor.Count; i++)
-            {
-                int index = vertexOffset + vertexStride * i;
-
-                for (int j = 0; j < vertexComponentsCount; j++)
-                {
-                    int offset = index + j * vertexComponentSize;
-
-                    float f = BitConverter.ToSingle(vertexBuffer, offset);
-
-                    floats.Add(f);
-                }
-            }
-
-            int vertices = floats.Count / 3;
-
-            for (int i = 0; i < vertices; i++)
-            {
-                int index = i * 3;
-                rhinoMesh.Vertices.Add((double)floats[index], (double)floats[index + 1], (double)floats[index + 2]);
-            }
 
             List<uint> indices = new List<uint>();
 
@@ -287,6 +313,68 @@ namespace glTF_BinImporter
                 {
                     rhinoMesh.Faces.AddFace(indexOne, indexTwo, indexThree);
                 }
+            }
+
+            return true;
+        }
+
+        private bool AttemptConvertVertices(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
+        {
+            glTFLoader.Schema.Accessor vertexAcessor = null;
+
+            if (!primitive.Attributes.TryGetValue(PositionAttributeTag, out int vertexAcessorIndex))
+            {
+                return false;
+            }
+
+            vertexAcessor = converter.GetAccessor(vertexAcessorIndex);
+
+            if (vertexAcessor == null)
+            {
+                return false;
+            }
+
+            glTFLoader.Schema.BufferView vertexView = converter.GetBufferView(vertexAcessor.BufferView);
+
+            if(vertexView == null)
+            {
+                return false;
+            }
+
+            byte[] vertexBuffer = converter.GetBuffer(vertexView.Buffer);
+
+            if(vertexBuffer == null)
+            {
+                return false;
+            }
+
+            int vertexOffset = vertexAcessor.ByteOffset + vertexView.ByteOffset;
+            int vertexStride = vertexView.ByteStride.HasValue ? vertexView.ByteStride.Value : TotalStride(vertexAcessor.ComponentType, vertexAcessor.Type);
+            int vertexComponentsCount = ComponentsCount(vertexAcessor.Type);
+            int vertexComponentSize = ComponentSize(vertexAcessor.ComponentType);
+
+            List<float> floats = new List<float>();
+
+            for (int i = 0; i < vertexAcessor.Count; i++)
+            {
+                int index = vertexOffset + vertexStride * i;
+
+                for (int j = 0; j < vertexComponentsCount; j++)
+                {
+                    int offset = index + j * vertexComponentSize;
+
+                    float f = BitConverter.ToSingle(vertexBuffer, offset);
+
+                    floats.Add(f);
+                }
+            }
+
+            int vertices = floats.Count / 3;
+
+            for (int i = 0; i < vertices; i++)
+            {
+                int index = i * 3;
+                rhinoMesh.Vertices.Add((double)floats[index], (double)floats[index + 1], (double)floats[index + 2]);
             }
 
             return true;
