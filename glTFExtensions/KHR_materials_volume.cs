@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace glTFExtensions
 {
+    /// <summary>
+    /// https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_volume/README.md
+    /// </summary>
     public class KHR_materials_volume
     {
         public const string Tag = "KHR_materials_volume";
@@ -21,5 +24,10 @@ namespace glTFExtensions
 
         [Newtonsoft.Json.JsonPropertyAttribute("attenuationColor")]
         public float[] AttenuationColor = new float[] { 1.0f, 1.0f, 1.0f };
+
+        public bool ShouldSerializeThicknessTexture()
+        {
+            return ThicknessTexture != null;
+        }
     }
 }

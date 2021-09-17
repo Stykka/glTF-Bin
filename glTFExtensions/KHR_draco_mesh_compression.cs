@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace glTFExtensions
 {
+    /// <summary>
+    /// https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_draco_mesh_compression/README.md
+    /// </summary>
     public class KHR_draco_mesh_compression
     {
         public const string Tag = "KHR_draco_mesh_compression";

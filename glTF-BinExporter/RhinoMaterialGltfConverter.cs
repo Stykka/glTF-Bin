@@ -210,6 +210,15 @@ namespace glTF_BinExporter
 
             material.Extensions.Add(glTFExtensions.KHR_materials_specular.Tag, specular);
 
+            //Volume extension
+
+            glTFExtensions.KHR_materials_volume volume = new glTFExtensions.KHR_materials_volume();
+
+            //0 is thin surface, all else is the geometries thickness. We don't support anything other than this.
+            volume.ThicknessFactor = 1.0f;
+
+            material.Extensions.Add(glTFExtensions.KHR_materials_volume.Tag, volume);
+
             return dummy.Materials.AddAndReturnIndex(material);
         }
 
