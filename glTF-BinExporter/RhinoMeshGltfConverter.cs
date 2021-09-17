@@ -135,7 +135,7 @@ namespace glTF_BinExporter
 
                     primitive.Extensions.Add(glTFExtensions.KHR_draco_mesh_compression.Tag, dracoCompressionObject);
                 }
-
+                
                 primitive.Material = materialIndex;
 
                 primitives.Add(primitive);

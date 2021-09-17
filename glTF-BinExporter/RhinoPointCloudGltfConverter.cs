@@ -58,6 +58,15 @@ namespace glTF_BinExporter
                 primitive.Attributes.Add(Constants.VertexColorAttributeTag, colorsAccessorIdx);
             }
 
+            if(pointCloud.ContainsNormals)
+            {
+                Rhino.Geometry.Vector3d[] normals = pointCloud.GetNormals();
+
+                int normalsAccessorIdx = GetNormalsAccessor(normals);
+
+                primitive.Attributes.Add(Constants.NormalAttributeTag, normalsAccessorIdx);
+            }
+
             glTFLoader.Schema.Mesh mesh = new glTFLoader.Schema.Mesh()
             {
                 Primitives = new glTFLoader.Schema.MeshPrimitive[] { primitive },
@@ -252,6 +261,97 @@ namespace glTF_BinExporter
             max = new Rhino.Display.Color4f(maxArr[0], maxArr[1], maxArr[2], maxArr[3]);
 
             IEnumerable<byte> bytesEnumerable = colorFloats.SelectMany(value => BitConverter.GetBytes(value));
+
+            return bytesEnumerable.ToArray();
+        }
+
+        private int GetNormalsAccessor(Rhino.Geometry.Vector3d[] normals)
+        {
+            int normalsBufferIdx = GetNormalsBufferView(normals, out Rhino.Geometry.Vector3f min, out Rhino.Geometry.Vector3f max, out int normalsCount);
+
+            glTFLoader.Schema.Accessor normalAccessor = new glTFLoader.Schema.Accessor()
+            {
+                BufferView = normalsBufferIdx,
+                ByteOffset = 0,
+                ComponentType = glTFLoader.Schema.Accessor.ComponentTypeEnum.FLOAT,
+                Count = normalsCount,
+                Min = min.ToFloatArray(),
+                Max = max.ToFloatArray(),
+                Type = glTFLoader.Schema.Accessor.TypeEnum.VEC3,
+            };
+
+            return dummy.Accessors.AddAndReturnIndex(normalAccessor);
+        }
+
+        int GetNormalsBufferView(Rhino.Geometry.Vector3d[] normals, out Rhino.Geometry.Vector3f min, out Rhino.Geometry.Vector3f max, out int normalsCount)
+        {
+            int buffer = 0;
+            int byteOffset = 0;
+            int byteLength = 0;
+
+            if (binary)
+            {
+                byte[] bytes = GetNormalsBytes(normals, out min, out max);
+                byteLength = bytes.Length;
+                byteOffset = binaryBuffer.Count;
+                binaryBuffer.AddRange(bytes);
+            }
+            else
+            {
+                buffer = GetNormalsBuffer(normals, out min, out max, out byteLength);
+            }
+
+            glTFLoader.Schema.BufferView normalsBufferView = new glTFLoader.Schema.BufferView()
+            {
+                Buffer = buffer,
+                ByteLength = byteLength,
+                ByteOffset = byteOffset,
+                Target = glTFLoader.Schema.BufferView.TargetEnum.ARRAY_BUFFER,
+            };
+
+            normalsCount = normals.Length;
+
+            return dummy.BufferViews.AddAndReturnIndex(normalsBufferView);
+        }
+
+        int GetNormalsBuffer(Rhino.Geometry.Vector3d[] normals, out Rhino.Geometry.Vector3f min, out Rhino.Geometry.Vector3f max, out int byteLength)
+        {
+            byte[] bytes = GetNormalsBytes(normals, out min, out max);
+
+            byteLength = bytes.Length;
+
+            glTFLoader.Schema.Buffer normalBuffer = new glTFLoader.Schema.Buffer()
+            {
+                Uri = Constants.TextBufferHeader + Convert.ToBase64String(bytes),
+                ByteLength = bytes.Length,
+            };
+
+            return dummy.Buffers.AddAndReturnIndex(normalBuffer);
+        }
+
+        byte[] GetNormalsBytes(Rhino.Geometry.Vector3d[] normals, out Rhino.Geometry.Vector3f min, out Rhino.Geometry.Vector3f max)
+        {
+            min = new Rhino.Geometry.Vector3f(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            max = new Rhino.Geometry.Vector3f(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+
+            //Preallocate
+            List<float> floats = new List<float>(normals.Length * 3);
+
+            foreach (Rhino.Geometry.Vector3f normal in normals)
+            {
+                floats.AddRange(new float[] { normal.X, normal.Y, normal.Z });
+
+                min.X = Math.Min(min.X, normal.X);
+                max.X = Math.Max(max.X, normal.X);
+
+                min.Y = Math.Min(min.Y, normal.Y);
+                max.Y = Math.Max(max.Y, normal.Y);
+
+                max.Z = Math.Max(max.Z, normal.Z);
+                min.Z = Math.Min(min.Z, normal.Z);
+            }
+
+            IEnumerable<byte> bytesEnumerable = floats.SelectMany(value => BitConverter.GetBytes(value));
 
             return bytesEnumerable.ToArray();
         }
