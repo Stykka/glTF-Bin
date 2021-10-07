@@ -202,7 +202,7 @@ namespace glTF_BinExporter
 
         public string GetObjectName(RhinoObject rhinoObject)
         {
-            return string.IsNullOrEmpty(rhinoObject.Name) ? null : rhinoObject.Name;
+            return string.IsNullOrEmpty(rhinoObject.Name) ? rhinoObject.Id.ToString() : rhinoObject.Name;
         }
 
         public byte[] GetBinaryBuffer()
@@ -341,16 +341,6 @@ namespace glTF_BinExporter
             }
 
             return true;
-        }
-
-        private string GetDebugName(RhinoObject rhinoObject)
-        {
-            if (string.IsNullOrEmpty(rhinoObject.Name))
-            {
-                return "(Unnamed)";
-            }
-
-            return rhinoObject.Name;
         }
 
         public List<ObjectExportData> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)
