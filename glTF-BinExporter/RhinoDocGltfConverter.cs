@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Rhino.DocObjects;
 using Rhino;
-using glTFLoader.Schema;
 using Rhino.Render;
 using Rhino.Display;
 
@@ -53,7 +52,7 @@ namespace glTF_BinExporter
 
         private List<byte> binaryBuffer = new List<byte>();
 
-        private Dictionary<int, Node> layers = new Dictionary<int, Node>();
+        private Dictionary<int, glTFLoader.Schema.Node> layers = new Dictionary<int, glTFLoader.Schema.Node>();
 
         private RenderMaterial defaultMaterial = null;
         private RenderMaterial DefaultMaterial
@@ -68,22 +67,22 @@ namespace glTF_BinExporter
                 return defaultMaterial;
             }
         }
-        public Gltf ConvertToGltf()
+        public glTFLoader.Schema.Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
             dummy.Scenes.Add(new gltfSchemaSceneDummy());
 
-            dummy.Asset = new Asset()
+            dummy.Asset = new glTFLoader.Schema.Asset()
             {
                 Version = "2.0",
             };
 
-            dummy.Samplers.Add(new Sampler()
+            dummy.Samplers.Add(new glTFLoader.Schema.Sampler()
             {
-                MinFilter = Sampler.MinFilterEnum.LINEAR,
-                MagFilter = Sampler.MagFilterEnum.LINEAR,
-                WrapS = Sampler.WrapSEnum.REPEAT,
-                WrapT = Sampler.WrapTEnum.REPEAT,
+                MinFilter = glTFLoader.Schema.Sampler.MinFilterEnum.LINEAR,
+                MagFilter = glTFLoader.Schema.Sampler.MagFilterEnum.LINEAR,
+                WrapS = glTFLoader.Schema.Sampler.WrapSEnum.REPEAT,
+                WrapT = glTFLoader.Schema.Sampler.WrapTEnum.REPEAT,
             });
 
             if(options.UseDracoCompression)
@@ -106,7 +105,7 @@ namespace glTF_BinExporter
 
                 if(meshIndex != -1)
                 {
-                    glTFLoader.Schema.Node node = new Node()
+                    glTFLoader.Schema.Node node = new glTFLoader.Schema.Node()
                     {
                         Mesh = meshIndex,
                         Name = GetObjectName(rhinoObject),
@@ -143,7 +142,7 @@ namespace glTF_BinExporter
                 //have to add the empty buffer for the binary file header
                 dummy.Buffers.Add(new glTFLoader.Schema.Buffer()
                 {
-                    ByteLength = (int)binaryBuffer.Count,
+                    ByteLength = binaryBuffer.Count,
                     Uri = null,
                 });
             }
@@ -165,7 +164,7 @@ namespace glTF_BinExporter
 
         private void AddToLayer(Layer layer, int child)
         {
-            if(layers.TryGetValue(layer.Index, out Node node))
+            if(layers.TryGetValue(layer.Index, out glTFLoader.Schema.Node node))
             {
                 if (node.Children == null)
                 {
@@ -178,7 +177,7 @@ namespace glTF_BinExporter
             }
             else
             {
-                node = new Node()
+                node = new glTFLoader.Schema.Node()
                 {
                     Name = layer.Name,
                     Children = new int[1] { child },
@@ -244,7 +243,7 @@ namespace glTF_BinExporter
         {
             glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
             {
-                PbrMetallicRoughness = new MaterialPbrMetallicRoughness()
+                PbrMetallicRoughness = new glTFLoader.Schema.MaterialPbrMetallicRoughness()
                 {
                     BaseColorFactor = color.ToFloatArray(),
                 }
