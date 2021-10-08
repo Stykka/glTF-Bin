@@ -68,7 +68,7 @@ namespace glTF_BinExporter
             Rhino.DocObjects.Texture clearcoatTexture = pbr.GetTexture(TextureType.PBR_Clearcoat);
             Rhino.DocObjects.Texture clearcoatRoughessTexture = pbr.GetTexture(TextureType.PBR_ClearcoatRoughness);
             Rhino.DocObjects.Texture clearcoatNormalTexture = pbr.GetTexture(TextureType.PBR_ClearcoatBump);
-            Rhino.DocObjects.Texture specularTexture = pbr.GetTexture(TextureType.PBR_Specular);
+            Rhino.DocObjects.Texture specularTintTexture = pbr.GetTexture(TextureType.PBR_SpecularTint);
 
             HandleBaseColor(rhinoMaterial, material);
 
@@ -104,7 +104,15 @@ namespace glTF_BinExporter
             if (emissiveTexture != null && emissiveTexture.Enabled)
             {
                 material.EmissiveTexture = AddTexture(emissiveTexture.FileReference.FullPath);
-
+                material.EmissiveFactor = new float[]
+                {
+                    1.0f,
+                    1.0f,
+                    1.0f,
+                };
+            }
+            else
+            {
                 float emissionMultiplier = 1.0f;
 
                 var param = rhinoMaterial.RenderMaterial.GetParameter("emission-multiplier");
@@ -114,20 +122,19 @@ namespace glTF_BinExporter
                     emissionMultiplier = (float)Convert.ToDouble(param);
                 }
 
+                float r = rhinoMaterial.PhysicallyBased.Emission.R / emissionMultiplier;
+                float g = rhinoMaterial.PhysicallyBased.Emission.G / emissionMultiplier;
+                float b = rhinoMaterial.PhysicallyBased.Emission.B / emissionMultiplier;
+
+                r = Math.Max(Math.Min(r, 0.0f), 1.0f);
+                g = Math.Max(Math.Min(g, 0.0f), 1.0f);
+                b = Math.Max(Math.Min(b, 0.0f), 1.0f);
+
                 material.EmissiveFactor = new float[]
                 {
-                    emissionMultiplier,
-                    emissionMultiplier,
-                    emissionMultiplier,
-                };
-            }
-            else
-            {
-                material.EmissiveFactor = new float[]
-                {
-                    rhinoMaterial.PhysicallyBased.Emission.R,
-                    rhinoMaterial.PhysicallyBased.Emission.G,
-                    rhinoMaterial.PhysicallyBased.Emission.B,
+                    r,
+                    g,
+                    b,
                 };
             }
 
@@ -197,15 +204,15 @@ namespace glTF_BinExporter
 
             glTFExtensions.KHR_materials_specular specular = new glTFExtensions.KHR_materials_specular();
 
-            if(specularTexture != null && specularTexture.Enabled)
+            if(specularTintTexture != null && specularTintTexture.Enabled)
             {
                 //Specular is stored in the textures alpha channel
-                specular.SpecularTexture = GetSingleChannelTexture(specularTexture, RgbaChannel.Alpha, false);
-                specular.SpecularFactor = GetTextureWeight(specularTexture);
+                specular.SpecularTexture = GetSingleChannelTexture(specularTintTexture, RgbaChannel.Alpha, false);
+                specular.SpecularFactor = GetTextureWeight(specularTintTexture);
             }
             else
             {
-                specular.SpecularFactor = (float)pbr.Specular;
+                specular.SpecularFactor = (float)pbr.SpecularTint;
             }
 
             material.Extensions.Add(glTFExtensions.KHR_materials_specular.Tag, specular);
@@ -462,7 +469,7 @@ namespace glTF_BinExporter
             var texture = new glTFLoader.Schema.Texture()
             {
                 Source = imageIdx,
-                Sampler = 0
+                Sampler = 0,
             };
 
             return dummy.Textures.AddAndReturnIndex(texture);
