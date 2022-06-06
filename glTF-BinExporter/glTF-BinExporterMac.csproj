@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="RhinoCommon" Version="7.9.21222.15001" IncludeAssets="compile;build" />
+    <PackageReference Include="RhinoCommon" Version="7.18.22124.3001" IncludeAssets="compile;build" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\glTFExtensions\glTFExtensions.csproj" />
