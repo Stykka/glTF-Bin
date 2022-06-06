@@ -37,7 +37,7 @@ namespace glTF_BinExporter
         {
             bool binary = GlTFUtils.IsFileGltfBinary(filename);
 
-            if(!UseSavedSettingsDontShowDialog)
+            if(!UseSavedSettingsDontShowDialog && !options.SuppressDialogBoxes)
             {
                 ExportOptionsDialog optionsDlg = new ExportOptionsDialog();
 
