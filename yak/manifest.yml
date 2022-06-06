@@ -5,6 +5,7 @@ authors:
 - Aske Doerge 
 - Joshua Kennedy
 - Peter Krattenmacher
+- Ali Tehami
 description: Import and export plugins for .gltf and .glb files.
 url: https://github.com/Stykka/glTF-Bin
 keywords:
