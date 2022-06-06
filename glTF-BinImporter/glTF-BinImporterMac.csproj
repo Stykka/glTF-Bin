@@ -13,7 +13,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="RhinoCommon" Version="7.9.21222.15001" IncludeAssets="compile;build" />
+    <PackageReference Include="RhinoCommon" Version="7.18.22124.3001" IncludeAssets="compile;build" />
   </ItemGroup>
   
   <ItemGroup>
