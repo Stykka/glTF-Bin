@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>glTF_BinExporter</RootNamespace>
+    <Version>1.1</Version>
+    <Title>glTF_BinExporter</Title>
+    <Description>Description of glTF_BinExporter</Description>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <LangVersion>latestmajor</LangVersion>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <LangVersion>latestmajor</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="RhinoCommon" Version="7.18.22124.3001" IncludeAssets="compile;build" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\glTFExtensions\glTFExtensions.csproj" />
+    <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
+  </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="Copy &quot;$(TargetPath)&quot; &quot;$(TargetDir)$(TargetName).rhp&quot;&#xD;&#xA;Erase &quot;$(TargetPath)&quot;&#xD;&#xA;" />
+  </Target>
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyName>glTF-BinExporter</AssemblyName>
+  </PropertyGroup>
+</Project>
