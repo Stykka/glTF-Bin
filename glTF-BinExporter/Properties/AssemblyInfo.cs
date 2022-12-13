@@ -17,11 +17,11 @@ using Rhino.PlugIns;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Import glTF")] // Plug-In title is extracted from this
+[assembly: AssemblyTitle("Export glTF")] // Plug-In title is extracted from this
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Robert McNeel & Associates")]
-[assembly: AssemblyProduct("Import glTF")]
+[assembly: AssemblyProduct("Export glTF")]
 [assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -32,4 +32,4 @@ using Rhino.PlugIns;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("1BE7CC20-B0E4-4820-9A2E-158F9F081632")] // This will also be the Guid of the Rhino plug-in
+[assembly: Guid("B4AFFA68-4FD8-4484-BF59-D62E9F7B9BB3")] // This will also be the Guid of the Rhino plug-in

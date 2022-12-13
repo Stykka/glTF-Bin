@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\..\..\RhinoProjectPropertySheets\Rhino.CS.Friend.PlugIn.props" />
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <FileAlignment>512</FileAlignment>
+    <WarningLevel>4</WarningLevel>
+    <GenerateResourceUsePreserializedResources>True</GenerateResourceUsePreserializedResources>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>$(RhinoBinDir)\$(Configuration)\Plug-ins\</OutputPath>
+    <DefineConstants Condition="'$(OS)' == 'Windows_NT'">ON_RUNTIME_WIN;TRACE;DEBUG;</DefineConstants>
+    <DefineConstants Condition="'$(OS)' != 'Windows_NT'">TRACE;DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>anycpu</PlatformTarget>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>$(RhinoBinDir)\$(Configuration)\Plug-ins\</OutputPath>
+    <DefineConstants Condition="'$(OS)' == 'Windows_NT'">ON_RUNTIME_WIN;TRACE;</DefineConstants>
+    <DefineConstants Condition="'$(OS)' != 'Windows_NT'">TRACE;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\version.cs" Link="Properties\version.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="glTFBinExporterPlugin.cs" />
+    <Compile Include="glTFExportOptions.cs" />
+    <Compile Include="glTFExportOptionsDialog.cs" />
+    <Compile Include="gltfSchemaDummy.cs" />
+    <Compile Include="gltfSchemaSceneDummy.cs" />
+    <Compile Include="GlTFUtils.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RhinoDocGltfConverter.cs" />
+    <Compile Include="RhinoMaterialGltfConverter.cs" />
+    <Compile Include="RhinoMeshGltfConverter.cs" />
+    <Compile Include="Selection.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\DotNetSDK\Eto\src\Eto\Eto.csproj" Private="False" ExcludeAssets="all" />
+    <ProjectReference Include="..\..\..\..\DotNetSDK\Rhino.UI\Rhino.UI.csproj" Private="False" ExcludeAssets="all" />
+    <ProjectReference Include="..\..\..\..\DotNetSDK\rhinocommon\dotnet\RhinoCommon.csproj" Private="False" ExcludeAssets="all" />
+    <ProjectReference Include="..\glTFExtensions\glTFExtensions.csproj" />
+    <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Resources.Extensions" Version="7.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
