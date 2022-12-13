@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>glTF_BinExporter</RootNamespace>
+    <Version>1.0</Version>
+    <Title>glTF_BinExporter</Title>
+    <Description>Description of glTF_BinExporter</Description>
+    <RhinoMacLauncher>/Applications/Rhino 7.app</RhinoMacLauncher>
+    <ReleaseVersion>1.8.0.0</ReleaseVersion>
+    <PackageVersion>1.6.0.0</PackageVersion>
+    <Authors>Aske Doerge, Joshua Kennedy</Authors>
+    <AssemblyName>glTF-BinExporter</AssemblyName>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <LangVersion>latestmajor</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <LangVersion>latestmajor</LangVersion>
+    <DebugType></DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="glTF\**" />
+    <EmbeddedResource Remove="glTF\**" />
+    <None Remove="glTF\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="RhinoCommon" Version="7.18.22124.3001" IncludeAssets="compile;build" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\glTFExtensions\glTFExtensions.csproj" />
+    <ProjectReference Include="..\glTFLib\glTF-CSharp-Loader\glTFLoader\glTFLoader.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+</Project>

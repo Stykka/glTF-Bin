@@ -1,28 +1,35 @@
+﻿using Rhino.PlugIns;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Rhino.PlugIns;
 
-// Plug-in Description Attributes - all of these are optional
-// These will show in Rhino's option dialog, in the tab Plug-ins
-[assembly: PlugInDescription(DescriptionType.Address, "3670 Woodland Park Avenue North\nSeattle WA 98103")]
-[assembly: PlugInDescription(DescriptionType.Country, "USA")]
-[assembly: PlugInDescription(DescriptionType.Email, "tech@mcneel.com")]
-[assembly: PlugInDescription(DescriptionType.Phone, "206-545-7000")]
-[assembly: PlugInDescription(DescriptionType.Fax, "206-545-7321")]
-[assembly: PlugInDescription(DescriptionType.Organization, "Robert McNeel & Associates")]
-[assembly: PlugInDescription(DescriptionType.UpdateUrl, "http://www.updates.mcneel.com")]
-[assembly: PlugInDescription(DescriptionType.WebSite, "http://www.mcneel.com")]
+// Plug-in Description Attributes - all of these are optional.
+// These will show in Rhino's option dialog, in the tab Plug-ins.
+[assembly: PlugInDescription(DescriptionType.Address, "-")]
+[assembly: PlugInDescription(DescriptionType.Country, "-")]
+[assembly: PlugInDescription(DescriptionType.Email, "-")]
+[assembly: PlugInDescription(DescriptionType.Phone, "-")]
+[assembly: PlugInDescription(DescriptionType.Fax, "-")]
+[assembly: PlugInDescription(DescriptionType.Organization, "-")]
+[assembly: PlugInDescription(DescriptionType.UpdateUrl, "-")]
+[assembly: PlugInDescription(DescriptionType.WebSite, "-")]
 
+// Icons should be Windows .ico files and contain 32-bit images in the following sizes: 16, 24, 32, 48, and 256.
+// This is a Rhino 6-only description.
+[assembly: PlugInDescription(DescriptionType.Icon, "glTF_BinImporter.EmbeddedResources.plugin-import.ico")]
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Import glTF")] // Plug-In title is extracted from this
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("glTF-BinImporter")]
+
+// This will be used also for the plug-in description.
+[assembly: AssemblyDescription("glTF-BinImporter import plug-in")]
+
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Robert McNeel & Associates")]
-[assembly: AssemblyProduct("Import glTF")]
-[assembly: AssemblyCopyright("Copyright ©  2022")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("glTF-BinImporter")]
+[assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,4 +39,21 @@ using Rhino.PlugIns;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("1BE7CC20-B0E4-4820-9A2E-158F9F081632")] // This will also be the Guid of the Rhino plug-in
+[assembly: Guid("c654ea6e-2ef6-4dad-9267-d7b527d51cf9")] // This will also be the Guid of the Rhino plug-in
+
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Build and Revision Numbers 
+// by using the '*' as shown below:
+// [assembly: AssemblyVersion("1.0.*")]
+
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+
+// Make compatible with Rhino Installer Engine
+[assembly: AssemblyInformationalVersion("2")]
