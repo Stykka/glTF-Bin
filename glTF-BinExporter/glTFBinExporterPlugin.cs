@@ -54,7 +54,7 @@ namespace glTF_BinExporter
 
             IEnumerable<Rhino.DocObjects.RhinoObject> objects = GetObjectsToExport(doc, options);
 
-            if(!GlTFExporterCommand.DoExport(filename, exportOptions, binary, doc, objects, doc.RenderSettings.LinearWorkflow))
+            if(!DoExport(filename, exportOptions, binary, doc, objects, doc.RenderSettings.LinearWorkflow))
             {
                 return WriteFileResult.Failure;
             }
@@ -80,6 +80,25 @@ namespace glTF_BinExporter
 
             exportOptionsDialog.RestorePosition();
             exportOptionsDialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+        }
+
+        public static bool DoExport(string fileName, glTFExportOptions options, bool binary, RhinoDoc doc, IEnumerable<Rhino.DocObjects.RhinoObject> rhinoObjects, Rhino.Render.LinearWorkflow workflow)
+        {
+            RhinoDocGltfConverter converter = new RhinoDocGltfConverter(options, binary, doc, rhinoObjects, workflow);
+            glTFLoader.Schema.Gltf gltf = converter.ConvertToGltf();
+
+            if (binary)
+            {
+              byte[] bytes = converter.GetBinaryBuffer();
+              glTFLoader.Interface.SaveBinaryModel(gltf, bytes.Length == 0 ? null : bytes, fileName);
+            }
+            else
+            {
+              glTFLoader.Interface.SaveModel(gltf, fileName);
+            }
+
+            RhinoApp.WriteLine("Successfully exported selected geometry to glTF(Binary).");
+            return true;
         }
 
         #region Settings
