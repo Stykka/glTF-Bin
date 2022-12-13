@@ -38,7 +38,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\..\..\version.cs" Link="Properties\version.cs" />
-    <Compile Include="glTFBinImporterCommand.cs" />
     <Compile Include="glTFBinImporterPlugIn.cs" />
     <Compile Include="GltfRhinoConverter.cs" />
     <Compile Include="GltfRhinoMaterialConverter.cs" />
