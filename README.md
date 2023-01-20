@@ -7,7 +7,6 @@ Rhino users with questions should go here: https://discourse.mcneel.com/t/gltf-b
 Bug reports are welcome here.
 
 # For Developers
-Can be integrated into your own products with a friendly API that allows it to be used from your own plugins.
 
 Everything you need to know about glTF is available on this poster: https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/figures/gltfOverview-2.0.0b.png
 
