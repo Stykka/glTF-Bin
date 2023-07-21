@@ -100,6 +100,11 @@ namespace glTF_BinImporter
 
             for(int i = 0; i < gltf.Meshes.Length; i++)
             {
+                if (gltf.Meshes[i].Name == null)
+                {
+                    OverwriteMeshName(i, gltf.Meshes[i], gltf.Nodes);
+                }
+
                 GltfRhinoMeshConverter converter = new GltfRhinoMeshConverter(gltf.Meshes[i], this, doc);
                 meshHolders.Add(converter.Convert());
             }
@@ -107,6 +112,16 @@ namespace glTF_BinImporter
             ProcessHierarchy();
 
             return true;
+        }
+
+        private void OverwriteMeshName(int meshIndex, Mesh gltfMesh, Node[] gltfNodes)
+        {
+            for (var i = 0; i < gltf.Nodes.Length; i++)
+            {
+                var node = gltf.Nodes[i];
+                if (node.Mesh != meshIndex || node.Mesh == null) continue;
+                gltf.Meshes[meshIndex].Name = node.Name;
+            }
         }
 
         private void ProcessHierarchy()
