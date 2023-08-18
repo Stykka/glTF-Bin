@@ -269,7 +269,7 @@ namespace glTF_BinImporter
             return renderTexture;
         }
 
-        public Rhino.Render.RenderTexture GetRenderTextureFromChannel(int textureIndex, RgbaChannel channel)
+        public Rhino.Render.RenderTexture GetRenderTextureFromChannel(int textureIndex, RgbaChannel channel, bool invert = false)
         {
             System.Drawing.Bitmap bmp = GetTextureBitmap(textureIndex, out string name);
 
@@ -290,6 +290,15 @@ namespace glTF_BinImporter
                     System.Drawing.Color color = bmp.GetPixel(i, j);
 
                     System.Drawing.Color colorResolved = GetColorFromChannel(color, channel);
+
+                    if(invert)
+                    {
+                        int r = 255 - colorResolved.R;
+                        int g = 255 - colorResolved.G;
+                        int b = 255 - colorResolved.B;
+
+                        colorResolved = System.Drawing.Color.FromArgb(r, g, b);
+                    }
 
                     resolvedBmp.SetPixel(i, j, colorResolved);
                 }

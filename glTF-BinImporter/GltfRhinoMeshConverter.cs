@@ -13,6 +13,12 @@ namespace glTF_BinImporter
         public string Name;
     }
 
+    struct GltfPointCloudHolder
+    {
+        public string Name;
+        public Rhino.Geometry.PointCloud PointCloud;
+    }
+
     class GltfMeshHolder
     {
         public GltfMeshHolder(GltfRhinoConverter converter, Rhino.RhinoDoc doc)
@@ -25,7 +31,8 @@ namespace glTF_BinImporter
         private Rhino.RhinoDoc doc = null;
 
         private List<GltfMeshMaterialPair> meshMaterialPairs = new List<GltfMeshMaterialPair>();
-        
+        private List<GltfPointCloudHolder> pointCloudHolders = new List<GltfPointCloudHolder>();
+
         public void AddPrimitive(Rhino.Geometry.Mesh rhinoMesh, int? materialIndex, string name)
         {
             meshMaterialPairs.Add(new GltfMeshMaterialPair()
@@ -33,6 +40,15 @@ namespace glTF_BinImporter
                 RhinoMesh = rhinoMesh,
                 MaterialIndex = materialIndex,
                 Name = name,
+            });
+        }
+
+        public void AddPointCloudPrimitive(Rhino.Geometry.PointCloud pointCloud, string name)
+        {
+            pointCloudHolders.Add(new GltfPointCloudHolder()
+            {
+                Name = name,
+                PointCloud = pointCloud,
             });
         }
 
@@ -61,8 +77,27 @@ namespace glTF_BinImporter
                     rhinoObject.CommitChanges();
                 }
             }
-        }
 
+            foreach(GltfPointCloudHolder holder in pointCloudHolders)
+            {
+                Rhino.Geometry.PointCloud pointCloud = holder.PointCloud.Duplicate() as Rhino.Geometry.PointCloud;
+
+                if(pointCloud == null)
+                {
+                    continue;
+                }
+
+                pointCloud.Transform(GltfUtils.YupToZup * transform);
+
+                Guid objectId = doc.Objects.Add(pointCloud);
+
+                Rhino.DocObjects.RhinoObject rhinoObject = doc.Objects.Find(objectId);
+
+                rhinoObject.Attributes.Name = holder.Name;
+
+                rhinoObject.CommitChanges();
+            }
+        }
     }
 
     class GltfRhinoMeshConverter
@@ -89,26 +124,77 @@ namespace glTF_BinImporter
 
             foreach (var primitive in mesh.Primitives)
             {
-                Rhino.Geometry.Mesh rhinoMesh = GetMesh(primitive);
-                
-                if(rhinoMesh == null)
+                if(primitive.Mode == glTFLoader.Schema.MeshPrimitive.ModeEnum.POINTS)
                 {
-                    continue;
+                    Rhino.Geometry.PointCloud pointCloud = GetPointCloud(primitive);
+
+                    if(pointCloud == null)
+                    {
+                        continue;
+                    }
+
+                    meshHolder.AddPointCloudPrimitive(pointCloud, mesh.Name);
                 }
-
-                rhinoMesh.Weld(0.01);
-
-                rhinoMesh.Compact();
-
-                if(!rhinoMesh.IsValidWithLog(out string log))
+                else
                 {
-                    Rhino.RhinoApp.WriteLine(log);
-                }
+                    Rhino.Geometry.Mesh rhinoMesh = GetMesh(primitive);
 
-                meshHolder.AddPrimitive(rhinoMesh, primitive.Material, mesh.Name);
+                    if (rhinoMesh == null)
+                    {
+                        continue;
+                    }
+
+                    rhinoMesh.Weld(0.01);
+
+                    rhinoMesh.Compact();
+
+                    if (!rhinoMesh.IsValidWithLog(out string log))
+                    {
+                        Rhino.RhinoApp.WriteLine(log);
+                    }
+
+                    meshHolder.AddPrimitive(rhinoMesh, primitive.Material, mesh.Name);
+                }
             }
 
             return meshHolder;
+        }
+
+        Rhino.Geometry.PointCloud GetPointCloud(glTFLoader.Schema.MeshPrimitive primitive)
+        {
+            if(!AttemptGetVertexFloats(primitive, out List<Rhino.Geometry.Point3d> points))
+            {
+                return null;
+            }
+
+            Rhino.Geometry.PointCloud pointCloud = new Rhino.Geometry.PointCloud();
+
+            for(int i = 0; i < points.Count; i++)
+            {
+                pointCloud.Add(points[i]);
+            }
+
+            if(AttemptGetVertexColors(primitive, out List<System.Drawing.Color> colors))
+            {
+                int min = Math.Min(colors.Count, pointCloud.Count);
+
+                for(int i = 0; i < min; i++)
+                {
+                    pointCloud[i].Color = colors[i];
+                }
+            }
+
+            if(AttemptGetNormals(primitive, out List<Rhino.Geometry.Vector3d> normals))
+            {
+                int min = Math.Min(normals.Count, pointCloud.Count);
+
+                for(int i = 0; i < min; i++)
+                {
+                    pointCloud[i].Normal = normals[i];
+                }
+            }
+            
+            return pointCloud;
         }
 
         Rhino.Geometry.Mesh GetMesh(glTFLoader.Schema.MeshPrimitive primitive)
@@ -320,6 +406,23 @@ namespace glTF_BinImporter
 
         private bool AttemptConvertVertices(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
         {
+            if (!AttemptGetVertexFloats(primitive, out List<Rhino.Geometry.Point3d> vertices))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                rhinoMesh.Vertices.Add(vertices[i]);
+            }
+
+            return true;
+        }
+
+        private bool AttemptGetVertexFloats(glTFLoader.Schema.MeshPrimitive primitive, out List<Rhino.Geometry.Point3d> vertices)
+        {
+            vertices = new List<Rhino.Geometry.Point3d>();
+
             glTFLoader.Schema.Accessor vertexAcessor = null;
 
             if (!primitive.Attributes.TryGetValue(PositionAttributeTag, out int vertexAcessorIndex))
@@ -336,14 +439,14 @@ namespace glTF_BinImporter
 
             glTFLoader.Schema.BufferView vertexView = converter.GetBufferView(vertexAcessor.BufferView);
 
-            if(vertexView == null)
+            if (vertexView == null)
             {
                 return false;
             }
 
             byte[] vertexBuffer = converter.GetBuffer(vertexView.Buffer);
 
-            if(vertexBuffer == null)
+            if (vertexBuffer == null)
             {
                 return false;
             }
@@ -369,12 +472,12 @@ namespace glTF_BinImporter
                 }
             }
 
-            int vertices = floats.Count / 3;
+            int count = floats.Count / 3;
 
-            for (int i = 0; i < vertices; i++)
+            for (int i = 0; i < count; i++)
             {
                 int index = i * 3;
-                rhinoMesh.Vertices.Add((double)floats[index], (double)floats[index + 1], (double)floats[index + 2]);
+                vertices.Add(new Rhino.Geometry.Point3d(floats[index], floats[index + 1], floats[index + 2]));
             }
 
             return true;
@@ -382,6 +485,23 @@ namespace glTF_BinImporter
 
         private bool AttemptConvertNormals(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
         {
+            if(!AttemptGetNormals(primitive, out List<Rhino.Geometry.Vector3d> normals))
+            {
+                return false;
+            }
+
+            for(int i = 0; i < normals.Count; i++)
+            {
+                rhinoMesh.Normals.Add(normals[i]);
+            }
+
+            return true;
+        }
+
+        private bool AttemptGetNormals(glTFLoader.Schema.MeshPrimitive primitive, out List<Rhino.Geometry.Vector3d> normals)
+        {
+            normals = new List<Rhino.Geometry.Vector3d>();
+
             if (!primitive.Attributes.TryGetValue(NormalAttributeTag, out int normalAttributeAccessorIndex))
             {
                 return false;
@@ -432,11 +552,12 @@ namespace glTF_BinImporter
                 }
             }
 
-            int normals = normalsFloats.Count / 3;
-            for (int i = 0; i < normals; i++)
+            int count = normalsFloats.Count / 3;
+
+            for (int i = 0; i < count; i++)
             {
                 int index = i * 3;
-                rhinoMesh.Normals.Add(normalsFloats[index], normalsFloats[index + 1], normalsFloats[index + 2]);
+                normals.Add(new Rhino.Geometry.Vector3d(normalsFloats[index], normalsFloats[index + 1], normalsFloats[index + 2]));
             }
 
             return true;
@@ -525,6 +646,23 @@ namespace glTF_BinImporter
 
         private bool AttemptConvertVertexColors(glTFLoader.Schema.MeshPrimitive primitive, Rhino.Geometry.Mesh rhinoMesh)
         {
+            if(!AttemptGetVertexColors(primitive, out List<System.Drawing.Color> colors))
+            {
+                return false;
+            }
+
+            foreach(System.Drawing.Color color in colors)
+            {
+                rhinoMesh.VertexColors.Add(color);
+            }
+
+            return true;
+        }
+
+        private bool AttemptGetVertexColors(glTFLoader.Schema.MeshPrimitive primitive, out List<System.Drawing.Color> colors)
+        {
+            colors = new List<System.Drawing.Color>();
+
             if (!primitive.Attributes.TryGetValue(VertexColorAttributeTag, out int vertexColorAccessorIndex))
             {
                 return false;
@@ -532,21 +670,21 @@ namespace glTF_BinImporter
 
             glTFLoader.Schema.Accessor vertexColorAccessor = converter.GetAccessor(vertexColorAccessorIndex);
 
-            if(vertexColorAccessor == null)
+            if (vertexColorAccessor == null)
             {
                 return false;
             }
 
             glTFLoader.Schema.BufferView vertexColorBufferView = converter.GetBufferView(vertexColorAccessor.BufferView);
 
-            if(vertexColorBufferView == null)
+            if (vertexColorBufferView == null)
             {
                 return false;
             }
 
             byte[] vertexColorBuffer = converter.GetBuffer(vertexColorBufferView.Buffer);
 
-            if(vertexColorBuffer == null)
+            if (vertexColorBuffer == null)
             {
                 return false;
             }
@@ -604,7 +742,7 @@ namespace glTF_BinImporter
 
                     Rhino.Display.Color4f color = new Rhino.Display.Color4f(r, g, b, 1.0f);
 
-                    rhinoMesh.VertexColors.Add(color.AsSystemColor());
+                    colors.Add(color.AsSystemColor());
                 }
                 else if (vertexColorAccessor.Type == glTFLoader.Schema.Accessor.TypeEnum.VEC4)
                 {
@@ -615,7 +753,7 @@ namespace glTF_BinImporter
 
                     Rhino.Display.Color4f color = new Rhino.Display.Color4f(r, g, b, a);
 
-                    rhinoMesh.VertexColors.Add(color.AsSystemColor());
+                    colors.Add(color.AsSystemColor());
                 }
             }
 

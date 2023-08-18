@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Rhino.DocObjects;
 using Rhino;
-using glTFLoader.Schema;
 using Rhino.Render;
 using Rhino.Display;
 
@@ -53,7 +52,7 @@ namespace glTF_BinExporter
 
         private List<byte> binaryBuffer = new List<byte>();
 
-        private Dictionary<int, Node> layers = new Dictionary<int, Node>();
+        private Dictionary<int, glTFLoader.Schema.Node> layers = new Dictionary<int, glTFLoader.Schema.Node>();
 
         private RenderMaterial defaultMaterial = null;
         private RenderMaterial DefaultMaterial
@@ -68,22 +67,22 @@ namespace glTF_BinExporter
                 return defaultMaterial;
             }
         }
-        public Gltf ConvertToGltf()
+        public glTFLoader.Schema.Gltf ConvertToGltf()
         {
             dummy.Scene = 0;
             dummy.Scenes.Add(new gltfSchemaSceneDummy());
 
-            dummy.Asset = new Asset()
+            dummy.Asset = new glTFLoader.Schema.Asset()
             {
                 Version = "2.0",
             };
 
-            dummy.Samplers.Add(new Sampler()
+            dummy.Samplers.Add(new glTFLoader.Schema.Sampler()
             {
-                MinFilter = Sampler.MinFilterEnum.LINEAR,
-                MagFilter = Sampler.MagFilterEnum.LINEAR,
-                WrapS = Sampler.WrapSEnum.REPEAT,
-                WrapT = Sampler.WrapTEnum.REPEAT,
+                MinFilter = glTFLoader.Schema.Sampler.MinFilterEnum.LINEAR,
+                MagFilter = glTFLoader.Schema.Sampler.MagFilterEnum.LINEAR,
+                WrapS = glTFLoader.Schema.Sampler.WrapSEnum.REPEAT,
+                WrapT = glTFLoader.Schema.Sampler.WrapTEnum.REPEAT,
             });
 
             if(options.UseDracoCompression)
@@ -96,8 +95,30 @@ namespace glTF_BinExporter
             dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_clearcoat.Tag);
             dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_ior.Tag);
             dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_specular.Tag);
+            dummy.ExtensionsUsed.Add(glTFExtensions.KHR_materials_volume.Tag);
 
-            var sanitized = SanitizeRhinoObjects(objects);
+            IEnumerable<Rhino.DocObjects.RhinoObject> pointClouds = objects.Where(x => x.ObjectType == ObjectType.PointSet);
+
+            foreach(Rhino.DocObjects.RhinoObject rhinoObject in pointClouds)
+            {
+                RhinoPointCloudGltfConverter converter = new RhinoPointCloudGltfConverter(rhinoObject, options, binary, dummy, binaryBuffer);
+                int meshIndex = converter.AddPointCloud();
+
+                if(meshIndex != -1)
+                {
+                    glTFLoader.Schema.Node node = new glTFLoader.Schema.Node()
+                    {
+                        Mesh = meshIndex,
+                        Name = GetObjectName(rhinoObject),
+                    };
+
+                    int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
+
+                    AddNode(nodeIndex, rhinoObject);
+                }
+            }
+
+            List<ObjectExportData> sanitized = SanitizeRhinoObjects(objects);
 
             foreach(ObjectExportData exportData in sanitized)
             {
@@ -114,14 +135,7 @@ namespace glTF_BinExporter
 
                 int nodeIndex = dummy.Nodes.AddAndReturnIndex(node);
 
-                if(options.ExportLayers)
-                {
-                    AddToLayer(doc.Layers[exportData.Object.Attributes.LayerIndex], nodeIndex);
-                }
-                else
-                {
-                    dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
-                }
+                AddNode(nodeIndex, exportData.Object);
             }
 
             if (binary && binaryBuffer.Count > 0)
@@ -129,7 +143,7 @@ namespace glTF_BinExporter
                 //have to add the empty buffer for the binary file header
                 dummy.Buffers.Add(new glTFLoader.Schema.Buffer()
                 {
-                    ByteLength = (int)binaryBuffer.Count,
+                    ByteLength = binaryBuffer.Count,
                     Uri = null,
                 });
             }
@@ -137,9 +151,21 @@ namespace glTF_BinExporter
             return dummy.ToSchemaGltf();
         }
 
+        private void AddNode(int nodeIndex, Rhino.DocObjects.RhinoObject rhinoObject)
+        {
+            if (options.ExportLayers)
+            {
+                AddToLayer(doc.Layers[rhinoObject.Attributes.LayerIndex], nodeIndex);
+            }
+            else
+            {
+                dummy.Scenes[dummy.Scene].Nodes.Add(nodeIndex);
+            }
+        }
+
         private void AddToLayer(Layer layer, int child)
         {
-            if(layers.TryGetValue(layer.Index, out Node node))
+            if(layers.TryGetValue(layer.Index, out glTFLoader.Schema.Node node))
             {
                 if (node.Children == null)
                 {
@@ -152,7 +178,7 @@ namespace glTF_BinExporter
             }
             else
             {
-                node = new Node()
+                node = new glTFLoader.Schema.Node()
                 {
                     Name = layer.Name,
                     Children = new int[1] { child },
@@ -177,7 +203,7 @@ namespace glTF_BinExporter
 
         public string GetObjectName(RhinoObject rhinoObject)
         {
-            return string.IsNullOrEmpty(rhinoObject.Name) ? null : rhinoObject.Name;
+            return string.IsNullOrEmpty(rhinoObject.Name) ? rhinoObject.Id.ToString() : rhinoObject.Name;
         }
 
         public byte[] GetBinaryBuffer()
@@ -218,7 +244,7 @@ namespace glTF_BinExporter
         {
             glTFLoader.Schema.Material material = new glTFLoader.Schema.Material()
             {
-                PbrMetallicRoughness = new MaterialPbrMetallicRoughness()
+                PbrMetallicRoughness = new glTFLoader.Schema.MaterialPbrMetallicRoughness()
                 {
                     BaseColorFactor = color.ToFloatArray(),
                 }
@@ -316,16 +342,6 @@ namespace glTF_BinExporter
             }
 
             return true;
-        }
-
-        private string GetDebugName(RhinoObject rhinoObject)
-        {
-            if (string.IsNullOrEmpty(rhinoObject.Name))
-            {
-                return "(Unnamed)";
-            }
-
-            return rhinoObject.Name;
         }
 
         public List<ObjectExportData> SanitizeRhinoObjects(IEnumerable<RhinoObject> rhinoObjects)

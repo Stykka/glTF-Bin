@@ -41,6 +41,8 @@ namespace glTF_BinImporter
 
                     pbr.SetChild(texture, Rhino.Render.ParameterNames.PhysicallyBased.BaseColor);
                     pbr.SetChildSlotOn(Rhino.Render.ParameterNames.PhysicallyBased.BaseColor, true, RenderContent.ChangeContexts.Program);
+
+                    pbr.SetParameter("alpha-transparency", true);
                 }
 
                 baseColor = GltfUtils.UnapplyGamma(baseColor);
@@ -221,7 +223,7 @@ namespace glTF_BinImporter
                 }
                 else
                 {
-                    pbr.SetParameter(PhysicallyBased.Opacity, 1.0 - transmission.TransmissionFactor);
+                    pbr.SetParameter(PhysicallyBased.Opacity, transmission.TransmissionFactor);
                 }
             }
         }
